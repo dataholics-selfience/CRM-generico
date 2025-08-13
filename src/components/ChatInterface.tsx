@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Menu, SendHorizontal, Rocket, FolderOpen, Pencil } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import { doc, updateDoc, addDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, addDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { useTheme } from '../contexts/ThemeContext';
 import { MessageType, SegmentType, StartupListType } from '../types';
@@ -131,7 +131,13 @@ const ChatInterface = ({ messages, addMessage, toggleSidebar, isSidebarOpen, cur
           scrollToBottom();
         }, 3000);
 
-        const response = await fetch('https://primary-production-2e3b.up.railway.app/webhook/CRM-Generico', {
+        // Determine webhook endpoint based on dev mode
+        const isDevMode = localStorage.getItem('devMode') === 'true';
+        const webhookUrl = isDevMode 
+          ? 'https://primary-production-2e3b.up.railway.app/webhook-test/CRM-Generico'
+          : 'https://primary-production-2e3b.up.railway.app/webhook/CRM-Generico';
+
+        const response = await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -65,8 +65,14 @@ const NewSegment = () => {
         segmentId: segmentRef.id
       });
 
+      // Determine webhook endpoint based on dev mode
+      const isDevMode = localStorage.getItem('devMode') === 'true';
+      const webhookUrl = isDevMode 
+        ? 'https://primary-production-2e3b.up.railway.app/webhook-test/CRM-Generico'
+        : 'https://primary-production-2e3b.up.railway.app/webhook/CRM-Generico';
+
       // Send webhook message
-      const response = await fetch('https://primary-production-2e3b.up.railway.app/webhook/CRM-Generico', {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -93,13 +99,25 @@ const NewSegment = () => {
       });
 
       // Handle webhook response
-      const data = await response.json();
-      if (data[0]?.output) {
+      try {
+        const data = await response.json();
+        if (data[0]?.output) {
+          await addDoc(collection(db, 'messages'), {
+            segmentId: segmentRef.id,
+            userId: auth.currentUser.uid,
+            role: 'assistant',
+            content: data[0].output,
+            timestamp: new Date().toISOString()
+          });
+        }
+      } catch (jsonError) {
+        console.error('Error parsing webhook response:', jsonError);
+        // Add a default assistant message if JSON parsing fails
         await addDoc(collection(db, 'messages'), {
           segmentId: segmentRef.id,
           userId: auth.currentUser.uid,
           role: 'assistant',
-          content: data[0].output,
+          content: 'Segmento criado com sucesso! Como posso ajudar você a desenvolver estratégias para este segmento?',
           timestamp: new Date().toISOString()
         });
       }

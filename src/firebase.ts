@@ -3,13 +3,12 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAGP46j09m5LH_XhP2qdAfB_cLNHC82rZA",
-  authDomain: "genoi-7777.firebaseapp.com",
-  projectId: "genoi-7777",
-  storageBucket: "genoi-7777.firebasestorage.app",
-  messagingSenderId: "894331831616",
-  appId: "1:894331831616:web:1e1583b1a3b8cdd140e6a5",
-  measurementId: "G-GPH8EYLKFP"
+  apiKey: "AIzaSyBpWG5w5ENIP0qPLTpcFSJj0bTsWcHrWzo",
+  authDomain: "crm-generico-857f1.firebaseapp.com",
+  projectId: "crm-generico-857f1",
+  storageBucket: "crm-generico-857f1.firebasestorage.app",
+  messagingSenderId: "825440015706",
+  appId: "1:825440015706:web:4f964e45a793f418804f63"
 };
 
 // Initialize Firebase

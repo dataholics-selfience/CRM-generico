@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, X, FolderClosed, FolderOpen, Rocket, BarChart3, Sun, Moon } from 'lucide-react';
+import { Plus, X, FolderClosed, FolderOpen, Rocket, BarChart3, Sun, Moon, Settings } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase';
@@ -23,6 +23,16 @@ const Sidebar = ({ isOpen, toggleSidebar, segments, currentSegmentId, onSelectSe
   const { isDarkMode, toggleTheme } = useTheme();
   const [segmentStartups, setSegmentStartups] = useState<Record<string, StartupListType[]>>({});
   const [savedStartupsCount, setSavedStartupsCount] = useState(0);
+  const [isDevMode, setIsDevMode] = useState(false);
+  const [isAdminUser, setIsAdminUser] = useState(false);
+
+  useEffect(() => {
+    if (auth.currentUser?.email === 'innovagenoi@gmail.com') {
+      setIsAdminUser(true);
+      const savedMode = localStorage.getItem('devMode');
+      setIsDevMode(savedMode === 'true');
+    }
+  }, []);
 
   useEffect(() => {
     const fetchStartupLists = async () => {
@@ -61,6 +71,13 @@ const Sidebar = ({ isOpen, toggleSidebar, segments, currentSegmentId, onSelectSe
 
     fetchSavedStartupsCount();
   }, []);
+
+  const toggleDevMode = () => {
+    const newMode = !isDevMode;
+    setIsDevMode(newMode);
+    localStorage.setItem('devMode', newMode.toString());
+    localStorage.setItem('webhookEndpoint', newMode ? 'development' : 'production');
+  };
 
   const handleLogout = async () => {
     try {
@@ -140,6 +157,19 @@ const Sidebar = ({ isOpen, toggleSidebar, segments, currentSegmentId, onSelectSe
               <span>{isDarkMode ? 'Modo Claro' : 'Modo Escuro'}</span>
             </button>
           </div>
+            {isAdminUser && (
+              <button
+                onClick={toggleDevMode}
+                className={`w-full flex items-center gap-2 text-base font-medium p-3 rounded-lg transition-all ${
+                  isDevMode
+                    ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                    : 'bg-green-600 hover:bg-green-700 text-white'
+                }`}
+              >
+                <Settings size={18} />
+                <span>{isDevMode ? 'Desenvolvimento' : 'Produção'}</span>
+              </button>
+            )}
 
           <div className="px-3 mb-2">
             <h2 className={`text-sm font-normal mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
