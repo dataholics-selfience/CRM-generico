@@ -69,8 +69,7 @@ const Layout = () => {
     if (!auth.currentUser || !currentSegmentId) return;
 
     const messagesQuery = query(
-      collection(db, 'messages'),
-      where('segmentId', '==', currentSegmentId),
+      collection(db, 'segments', currentSegmentId, 'messages'),
       orderBy('timestamp', 'asc')
     );
 
@@ -95,12 +94,11 @@ const Layout = () => {
     const newMessage = {
       ...message,
       timestamp: new Date().toISOString(),
-      userId: auth.currentUser.uid,
-      segmentId: currentSegmentId
+      userId: auth.currentUser.uid
     };
 
     try {
-      await addDoc(collection(db, 'messages'), newMessage);
+      await addDoc(collection(db, 'segments', currentSegmentId, 'messages'), newMessage);
     } catch (error) {
       console.error('Error adding message:', error);
     }

@@ -3,15 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Star, Calendar, Building2, MapPin, Users, Briefcase, 
   ArrowLeft, Mail, Globe, Box, Linkedin, Facebook, 
-  Twitter, Instagram, Trash2, FolderOpen, ChevronRight,
-  ChevronLeft, Plus, GripVertical
+  Twitter, Instagram, Trash2, FolderOpen, Plus, GripVertical,
+  UserPlus
 } from 'lucide-react';
 import { collection, query, where, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { StartupType, SocialLink } from '../types';
+import { StartupType, SocialLink, ManualCompanyType } from '../types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import StartupInteractionTimeline from './StartupInteractionTimeline';
+import AddManualCompany from './AddManualCompany';
 
 interface SavedStartupType {
   id: string;
@@ -233,7 +234,7 @@ const PipelineStage = ({
           {stage.name}
         </h3>
         <span className="text-gray-400 text-sm">
-          {startups.length} startup{startups.length !== 1 ? 's' : ''}
+          {startups.length} empresa{startups.length !== 1 ? 's' : ''}
         </span>
       </div>
       
@@ -241,7 +242,7 @@ const PipelineStage = ({
         {startups.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Plus size={24} className="mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Arraste startups aqui</p>
+            <p className="text-sm">Arraste empresas aqui</p>
           </div>
         ) : (
           startups.map((startup) => (
@@ -364,6 +365,8 @@ const SavedStartups = () => {
   const [selectedStartup, setSelectedStartup] = useState<StartupType | null>(null);
   const [selectedStartupId, setSelectedStartupId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAddCompany, setShowAddCompany] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const fetchSavedStartups = async () => {
@@ -395,7 +398,7 @@ const SavedStartups = () => {
     };
 
     fetchSavedStartups();
-  }, [navigate]);
+  }, [navigate, refreshKey]);
 
   const handleStartupClick = (startup: StartupType) => {
     setSelectedStartup(startup);
@@ -408,6 +411,8 @@ const SavedStartups = () => {
   const handleBack = () => {
     if (selectedStartupId) {
       setSelectedStartupId(null);
+    } else if (showAddCompany) {
+      setShowAddCompany(false);
     } else if (selectedStartup) {
       setSelectedStartup(null);
     } else {
@@ -427,11 +432,26 @@ const SavedStartups = () => {
     ));
   };
 
+  const handleCompanyAdded = () => {
+    setShowAddCompany(false);
+    setRefreshKey(prev => prev + 1);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-white">Carregando pipeline...</div>
       </div>
+    );
+  }
+
+  // Show add company form
+  if (showAddCompany) {
+    return (
+      <AddManualCompany
+        onBack={handleBack}
+        onCompanyAdded={handleCompanyAdded}
+      />
     );
   }
 
@@ -477,8 +497,15 @@ const SavedStartups = () => {
           <div className="flex items-center gap-2 flex-1 ml-4">
             <FolderOpen size={20} className="text-gray-400" />
             <h2 className="text-lg font-medium">Pipeline CRM</h2>
+            <button
+              onClick={() => setShowAddCompany(true)}
+              className="ml-4 flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors"
+            >
+              <UserPlus size={16} />
+              Adicionar Empresa
+            </button>
           </div>
-          <span className="text-sm text-gray-400">{savedStartups.length} startup{savedStartups.length !== 1 ? 's' : ''}</span>
+          <span className="text-sm text-gray-400">{savedStartups.length} empresa{savedStartups.length !== 1 ? 's' : ''}</span>
         </div>
       </div>
 
@@ -489,13 +516,13 @@ const SavedStartups = () => {
               <FolderOpen size={64} className="text-gray-600 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-white mb-2">Pipeline vazio</h3>
               <p className="text-gray-400 mb-6">
-                Você ainda não tem startups no seu pipeline. Explore as listas de startups e adicione suas favoritas.
+                Você ainda não tem empresas no seu pipeline. Explore as listas de empresas e adicione suas favoritas.
               </p>
               <button
                 onClick={() => navigate('/startups')}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
               >
-                Explorar Startups
+                Explorar Empresas
               </button>
             </div>
           ) : (

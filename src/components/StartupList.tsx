@@ -255,7 +255,7 @@ const StartupCard = ({
               ) : (
                 <>
                   <Plus size={16} />
-                  Selecionar startup
+                  Selecionar empresa
                 </>
               )}
             </button>

@@ -38,11 +38,30 @@ export interface StartupListType {
   userEmail: string;
   segmentTitle: string;
   ratingExplanation: string;
-  startups: StartupType[];
+  startups: StartupType[]; // Keep for backward compatibility
+  empresas?: StartupType[]; // New field for companies
   projectPlanning: ProjectPhaseType[];
   expectedResults: string[];
   competitiveAdvantages: string[];
   createdAt: string;
+}
+
+export interface ManualCompanyType {
+  id?: string;
+  nome: string;
+  empresa: string;
+  cnpj: string;
+  email: string;
+  whatsapp: string;
+  linkedin: string;
+  segmento: string;
+  regiao: string;
+  tamanho: string;
+  faturamento: string;
+  cargoAlvo: string;
+  dores: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface SocialLink {

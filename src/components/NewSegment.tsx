@@ -89,8 +89,7 @@ const NewSegment = () => {
       }
 
       // Save user message
-      await addDoc(collection(db, 'messages'), {
-        segmentId: segmentRef.id,
+      await addDoc(collection(db, 'segments', segmentRef.id, 'messages'), {
         userId: auth.currentUser.uid,
         role: 'user',
         content: message,
@@ -102,8 +101,7 @@ const NewSegment = () => {
       try {
         const data = await response.json();
         if (data[0]?.output) {
-          await addDoc(collection(db, 'messages'), {
-            segmentId: segmentRef.id,
+          await addDoc(collection(db, 'segments', segmentRef.id, 'messages'), {
             userId: auth.currentUser.uid,
             role: 'assistant',
             content: data[0].output,
@@ -113,8 +111,7 @@ const NewSegment = () => {
       } catch (jsonError) {
         console.error('Error parsing webhook response:', jsonError);
         // Add a default assistant message if JSON parsing fails
-        await addDoc(collection(db, 'messages'), {
-          segmentId: segmentRef.id,
+        await addDoc(collection(db, 'segments', segmentRef.id, 'messages'), {
           userId: auth.currentUser.uid,
           role: 'assistant',
           content: 'Segmento criado com sucesso! Como posso ajudar você a desenvolver estratégias para este segmento?',
