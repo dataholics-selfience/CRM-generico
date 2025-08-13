@@ -152,16 +152,75 @@ const ChatInterface = ({ messages, addMessage, toggleSidebar, isSidebarOpen, cur
         setResponseDelay(0);
 
         if (!response.ok) {
-          throw new Error('Failed to send message to webhook');
+          const errorText = await response.text();
+          console.error('Webhook error response:', errorText);
+          throw new Error(`Failed to send message to webhook: ${response.status} ${response.statusText}`);
         }
 
-        const data = await response.json();
-        if (data[0]?.output) {
-          const aiResponse = data[0].output;
+        let responseText;
+        try {
+          responseText = await response.text();
+          console.log('Raw webhook response:', responseText);
+          
+          if (!responseText.trim()) {
+            throw new Error('Empty response from webhook');
+          }
+          
+        } catch (jsonError) {
+          console.error('JSON parsing error:', jsonError);
+          console.error('Response text that failed to parse:', responseText);
+          
+          // Fallback: add a generic assistant message
+          await addMessage({
+            role: 'assistant',
+            content: 'Recebi sua mensagem e estou processando. Por favor, aguarde um momento.',
+            hidden: overrideMessage ? true : false
+          });
+          return;
+        }
+
+        // Try to parse JSON
+        let data;
+        try {
+          data = JSON.parse(responseText);
+          console.log('Parsed webhook data:', data);
+        } catch (parseError) {
+          console.error('Failed to parse JSON:', parseError);
+          console.error('Raw response:', responseText);
+          
+          // If it's not JSON, treat the entire response as the message
+          await addMessage({
+            role: 'assistant',
+            content: responseText,
+            hidden: overrideMessage ? true : false
+          });
+          return;
+        }
+
+        // Handle different response formats
+        let aiResponse = '';
+        
+        if (Array.isArray(data) && data.length > 0 && data[0]?.output) {
+          // Format: [{ output: "message" }]
+          aiResponse = data[0].output;
+        } else if (data?.output) {
+          // Format: { output: "message" }
+          aiResponse = data.output;
+        } else if (data?.message) {
+          // Format: { message: "message" }
+          aiResponse = data.message;
+        } else if (typeof data === 'string') {
+          // Format: "message"
+          aiResponse = data;
+        } else {
+          console.warn('Unexpected response format:', data);
+          aiResponse = 'Recebi sua mensagem, mas houve um problema no formato da resposta.';
+        }
+
+        if (aiResponse) {
           const startupData = extractStartupData(aiResponse);
 
           if (startupData) {
-
             await addDoc(collection(db, 'startupLists'), {
               userId: auth.currentUser.uid,
               userEmail: auth.currentUser.email,
@@ -186,6 +245,13 @@ const ChatInterface = ({ messages, addMessage, toggleSidebar, isSidebarOpen, cur
             });
             scrollToBottom();
           }
+        } else {
+          console.error('No valid response content found');
+          await addMessage({
+            role: 'assistant',
+            content: 'Desculpe, não consegui processar sua mensagem adequadamente. Por favor, tente novamente.',
+            hidden: overrideMessage ? true : false
+          });
         }
       } catch (error) {
         console.error('Error in chat:', error);

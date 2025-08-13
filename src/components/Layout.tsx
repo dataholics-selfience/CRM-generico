@@ -30,8 +30,7 @@ const Layout = () => {
 
     const segmentsQuery = query(
       collection(db, 'segments'),
-      where('userId', '==', auth.currentUser.uid),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', auth.currentUser.uid)
     );
 
     const unsubscribeSegments = onSnapshot(segmentsQuery, (snapshot) => {
@@ -39,6 +38,9 @@ const Layout = () => {
         id: doc.id,
         ...doc.data()
       })) as SegmentType[];
+      
+      // Sort by createdAt on the client side
+      newSegments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
       setSegments(newSegments);
 
