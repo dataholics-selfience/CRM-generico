@@ -10,22 +10,10 @@ import {
   query, where, onSnapshot, deleteDoc 
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { ClientType, InteractionType, ServiceType, UserType } from '../types';
+import { ClientType, InteractionType, ServiceType, UserType, PipelineStageType } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
-const PIPELINE_STAGES = [
-  { id: 'mapeada', name: 'Mapeada', color: 'bg-yellow-500' },
-  { id: 'selecionada', name: 'Selecionada', color: 'bg-blue-500' },
-  { id: 'contatada', name: 'Contatada', color: 'bg-purple-500' },
-  { id: 'entrevistada', name: 'Entrevistada', color: 'bg-green-500' },
-  { id: 'poc', name: 'POC', color: 'bg-orange-500' },
-  { id: 'proposta', name: 'Proposta', color: 'bg-indigo-500' },
-  { id: 'negociacao', name: 'Negociação', color: 'bg-pink-500' },
-  { id: 'fechada', name: 'Fechada', color: 'bg-emerald-500' },
-  { id: 'perdida', name: 'Perdida', color: 'bg-red-500' }
-];
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +21,7 @@ const ClientDetail = () => {
   const { isDarkMode } = useTheme();
   const [client, setClient] = useState<ClientType | null>(null);
   const [services, setServices] = useState<ServiceType[]>([]);
+  const [stages, setStages] = useState<PipelineStageType[]>([]);
   const [interactions, setInteractions] = useState<InteractionType[]>([]);
   const [userData, setUserData] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,6 +48,18 @@ const ClientDetail = () => {
           setUserData(userDoc.data() as UserType);
         }
 
+        // Fetch pipeline stages
+        const stagesQuery = query(
+          collection(db, 'pipelineStages'),
+          where('active', '==', true)
+        );
+        const stagesSnapshot = await getDocs(stagesQuery);
+        const stagesData = stagesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as PipelineStageType[];
+        stagesData.sort((a, b) => a.position - b.position);
+        setStages(stagesData);
         // Fetch services
         const servicesQuery = query(
           collection(db, 'services'),
@@ -183,7 +184,7 @@ const ClientDetail = () => {
 
   const service = services.find(s => s.id === client.serviceId);
   const plan = service?.plans.find(p => p.id === client.planId);
-  const currentStage = PIPELINE_STAGES.find(s => s.id === client.stage);
+  const currentStage = stages.find(s => s.id === client.stage);
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-black' : 'bg-white'}`}>
@@ -410,13 +411,13 @@ const ClientDetail = () => {
             <div className="bg-gray-800 rounded-lg p-6">
               <h3 className="text-lg font-bold text-white mb-4">Estágio Atual</h3>
               <div className="space-y-2">
-                {PIPELINE_STAGES.map((stage) => (
+                {stages.map((stage) => (
                   <button
                     key={stage.id}
                     onClick={() => handleStageChange(stage.id)}
                     className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                       client.stage === stage.id
-                        ? `${stage.color} text-white`
+                        ? `${stage.color}`
                         : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                     }`}
                   >

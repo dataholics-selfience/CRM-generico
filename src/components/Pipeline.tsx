@@ -4,24 +4,12 @@ import {
   Plus, Users, Building2, MapPin, Mail, Phone, Linkedin,
   GripVertical, Trash2, Menu, BarChart3, Settings, UserPlus
 } from 'lucide-react';
-import { collection, query, where, getDocs, deleteDoc, doc, updateDoc, addDoc, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, deleteDoc, doc, updateDoc, addDoc, onSnapshot, getDoc, orderBy } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { ClientType, ServiceType, UserType } from '../types';
+import { ClientType, ServiceType, UserType, PipelineStageType } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 import Sidebar from './Sidebar';
 import AddClientModal from './AddClientModal';
-
-const PIPELINE_STAGES = [
-  { id: 'mapeada', name: 'Mapeada', color: 'bg-yellow-200 text-yellow-800 border-yellow-300' },
-  { id: 'selecionada', name: 'Selecionada', color: 'bg-blue-200 text-blue-800 border-blue-300' },
-  { id: 'contatada', name: 'Contatada', color: 'bg-purple-200 text-purple-800 border-purple-300' },
-  { id: 'entrevistada', name: 'Entrevistada', color: 'bg-green-200 text-green-800 border-green-300' },
-  { id: 'poc', name: 'POC', color: 'bg-orange-200 text-orange-800 border-orange-300' },
-  { id: 'proposta', name: 'Proposta', color: 'bg-indigo-200 text-indigo-800 border-indigo-300' },
-  { id: 'negociacao', name: 'Negociação', color: 'bg-pink-200 text-pink-800 border-pink-300' },
-  { id: 'fechada', name: 'Fechada', color: 'bg-emerald-200 text-emerald-800 border-emerald-300' },
-  { id: 'perdida', name: 'Perdida', color: 'bg-red-200 text-red-800 border-red-300' }
-];
 
 const ClientCard = ({ 
   client, 
@@ -154,7 +142,7 @@ const PipelineStage = ({
   onRemoveClient,
   services
 }: { 
-  stage: typeof PIPELINE_STAGES[0];
+  stage: PipelineStageType;
   clients: ClientType[];
   onDrop: (clientId: string, newStage: string) => void;
   onClientClick: (clientId: string) => void;
@@ -231,6 +219,7 @@ const Pipeline = () => {
   const { isDarkMode } = useTheme();
   const [clients, setClients] = useState<ClientType[]>([]);
   const [services, setServices] = useState<ServiceType[]>([]);
+  const [stages, setStages] = useState<PipelineStageType[]>([]);
   const [userData, setUserData] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -257,6 +246,19 @@ const Pipeline = () => {
   useEffect(() => {
     if (!auth.currentUser || !userData) return;
 
+    // Fetch pipeline stages
+    const stagesQuery = query(
+      collection(db, 'pipelineStages'),
+      orderBy('position', 'asc')
+    );
+
+    const unsubscribeStages = onSnapshot(stagesQuery, (snapshot) => {
+      const stagesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as PipelineStageType[];
+      setStages(stagesData);
+    });
     // Fetch services
     const servicesQuery = query(
       collection(db, 'services'),
@@ -294,6 +296,7 @@ const Pipeline = () => {
     });
 
     return () => {
+      unsubscribeStages();
       unsubscribeServices();
       unsubscribeClients();
     };
@@ -349,6 +352,7 @@ const Pipeline = () => {
     );
   }
 
+  const activeStages = stages.filter(stage => stage.active);
   return (
     <div className={`flex h-screen ${isDarkMode ? 'bg-black text-gray-100' : 'bg-white text-gray-900'}`}>
       <Sidebar 
@@ -402,11 +406,22 @@ const Pipeline = () => {
               </button>
             )}
           </div>
+                <button
+                  onClick={() => navigate('/stages')}
+                  className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  <Move size={18} />
+                  Etapas
+                </button>
         </div>
 
         <div className="flex-1 overflow-x-auto p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-5 gap-4 min-w-max">
-            {PIPELINE_STAGES.map((stage) => {
+          <div className={`grid gap-4 min-w-max ${
+            activeStages.length <= 3 ? 'grid-cols-1 lg:grid-cols-3' :
+            activeStages.length <= 5 ? 'grid-cols-1 lg:grid-cols-3 xl:grid-cols-5' :
+            'grid-cols-1 lg:grid-cols-3 xl:grid-cols-6'
+          }`}>
+            {activeStages.map((stage) => {
               const stageClients = clients.filter(client => client.stage === stage.id);
               
               return (
@@ -431,6 +446,7 @@ const Pipeline = () => {
           onClose={() => setShowAddClient(false)}
           services={services}
           userData={userData}
+          stages={stages}
         />
       )}
     </div>

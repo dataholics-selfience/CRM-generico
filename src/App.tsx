@@ -15,6 +15,7 @@ import Pipeline from './components/Pipeline';
 import ClientDetail from './components/ClientDetail';
 import ServiceManagement from './components/ServiceManagement';
 import Dashboard from './components/Dashboard';
+import StageManagement from './components/StageManagement';
 import { UserType } from './types';
 
 function App() {
@@ -70,6 +71,7 @@ function App() {
           <Route path="/profile" element={userData?.emailVerified ? <UserManagement /> : <Navigate to="/verify-email" replace />} />
           <Route path="/client/:id" element={userData?.emailVerified ? <ClientDetail /> : <Navigate to="/verify-email" replace />} />
           <Route path="/services" element={userData?.emailVerified && userData?.role === 'admin' ? <ServiceManagement /> : <Navigate to="/" replace />} />
+          <Route path="/stages" element={userData?.emailVerified && userData?.role === 'admin' ? <StageManagement /> : <Navigate to="/" replace />} />
           <Route path="/dashboard" element={userData?.emailVerified ? <Dashboard /> : <Navigate to="/verify-email" replace />} />
           <Route path="/account-deleted" element={<AccountDeleted />} />
           <Route path="/" element={

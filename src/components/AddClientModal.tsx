@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { X, Save, Loader2 } from 'lucide-react';
-import { addDoc, collection } from 'firebase/firestore';
+import { X, Save, Loader2, ChevronDown } from 'lucide-react';
+import { addDoc, collection, query, getDocs, where, setDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { ClientType, ServiceType, UserType } from '../types';
+import { ClientType, ServiceType, UserType, PipelineStageType, CompanyType } from '../types';
 
 interface AddClientModalProps {
   onClose: () => void;
   services: ServiceType[];
   userData: UserType | null;
+  stages: PipelineStageType[];
 }
 
-const AddClientModal = ({ onClose, services, userData }: AddClientModalProps) => {
+const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalProps) => {
   const [formData, setFormData] = useState<Omit<ClientType, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'assignedTo'>>({
     nome: '',
     empresa: '',
@@ -24,15 +25,38 @@ const AddClientModal = ({ onClose, services, userData }: AddClientModalProps) =>
     faturamento: '',
     cargoAlvo: '',
     dores: '',
-    stage: 'mapeada',
+    stage: stages.length > 0 ? stages[0].id : '',
     serviceId: '',
     planId: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [companies, setCompanies] = useState<CompanyType[]>([]);
+  const [showCompanySuggestions, setShowCompanySuggestions] = useState(false);
+  const [filteredCompanies, setFilteredCompanies] = useState<CompanyType[]>([]);
 
   const selectedService = services.find(s => s.id === formData.serviceId);
+  const activeStages = stages.filter(stage => stage.active).sort((a, b) => a.position - b.position);
 
+  // Fetch companies for autocomplete
+  const fetchCompanies = async () => {
+    try {
+      const companiesQuery = query(collection(db, 'companies'));
+      const companiesSnapshot = await getDocs(companiesQuery);
+      const companiesData = companiesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as CompanyType[];
+      setCompanies(companiesData);
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+    }
+  };
+
+  // Initialize companies on mount
+  useState(() => {
+    fetchCompanies();
+  }, []);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -41,8 +65,44 @@ const AddClientModal = ({ onClose, services, userData }: AddClientModalProps) =>
       // Reset planId when service changes
       ...(name === 'serviceId' ? { planId: '' } : {})
     }));
+
+    // Handle company autocomplete
+    if (name === 'empresa') {
+      const filtered = companies.filter(company => 
+        company.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredCompanies(filtered);
+      setShowCompanySuggestions(value.length > 0 && filtered.length > 0);
+    }
   };
 
+  const handleCompanySelect = (companyName: string) => {
+    setFormData(prev => ({ ...prev, empresa: companyName }));
+    setShowCompanySuggestions(false);
+  };
+
+  const saveCompanyIfNew = async (companyName: string) => {
+    if (!auth.currentUser || !companyName.trim()) return;
+
+    const existingCompany = companies.find(c => 
+      c.name.toLowerCase() === companyName.toLowerCase()
+    );
+
+    if (!existingCompany) {
+      try {
+        const companyData: Omit<CompanyType, 'id'> = {
+          name: companyName.trim(),
+          createdBy: auth.currentUser.uid,
+          createdAt: new Date().toISOString()
+        };
+        
+        await addDoc(collection(db, 'companies'), companyData);
+        await fetchCompanies(); // Refresh companies list
+      } catch (error) {
+        console.error('Error saving company:', error);
+      }
+    }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth.currentUser || !userData) return;
@@ -52,10 +112,17 @@ const AddClientModal = ({ onClose, services, userData }: AddClientModalProps) =>
       return;
     }
 
+    if (!formData.stage) {
+      setError('Etapa é obrigatória');
+      return;
+    }
     setIsSubmitting(true);
     setError('');
 
     try {
+      // Save company if it's new
+      await saveCompanyIfNew(formData.empresa);
+
       const clientData: Omit<ClientType, 'id'> = {
         ...formData,
         assignedTo: auth.currentUser.uid,
@@ -161,6 +228,25 @@ const AddClientModal = ({ onClose, services, userData }: AddClientModalProps) =>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Plano *
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Etapa *
+              </label>
+              <select
+                name="stage"
+                value={formData.stage}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Selecione a etapa</option>
+                {activeStages.map(stage => (
+                  <option key={stage.id} value={stage.id}>
+                    {stage.name}
+                  </option>
+                ))}
+              </select>
+            </div>
               </label>
               <select
                 name="planId"

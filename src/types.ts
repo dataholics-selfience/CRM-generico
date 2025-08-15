@@ -190,3 +190,20 @@ export interface DashboardMetrics {
     clients: number;
   }>;
 }
+
+export interface PipelineStageType {
+  id: string;
+  name: string;
+  color: string;
+  position: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CompanyType {
+  id: string;
+  name: string;
+  createdBy: string;
+  createdAt: string;
+}
