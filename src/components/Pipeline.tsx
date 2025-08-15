@@ -9,7 +9,7 @@ import { db, auth } from '../firebase';
 import { ClientType, ServiceType, UserType, PipelineStageType, BusinessType, ContactType, CompanyType } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 import Sidebar from './Sidebar';
-import AddBusinessModal from './AddBusinessModal';
+import AddClientModal from './AddClientModal';
 
 const BusinessCard = ({ 
   business, 
@@ -154,7 +154,8 @@ const PipelineStage = ({
   onDrop, 
   onBusinessClick,
   onRemoveBusiness,
-  services
+  services,
+  navigate
 }: { 
   stage: PipelineStageType;
   businesses: BusinessType[];
@@ -164,6 +165,7 @@ const PipelineStage = ({
   onBusinessClick: (businessId: string) => void;
   onRemoveBusiness: (id: string) => void;
   services: ServiceType[];
+  navigate: (path: string) => void;
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -200,9 +202,18 @@ const PipelineStage = ({
       }`}
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className={`font-bold text-sm px-3 py-1 rounded-full border ${stage.color}`}>
-          {stage.name}
-        </h3>
+        <div className="flex items-center gap-2">
+          <h3 className={`font-bold text-sm px-3 py-1 rounded-full border ${stage.color}`}>
+            {stage.name}
+          </h3>
+          <button
+            onClick={() => navigate('/stages')}
+            className="text-gray-400 hover:text-white p-1 rounded transition-colors"
+            title="Editar etapas"
+          >
+            <Edit size={14} />
+          </button>
+        </div>
         <span className="text-gray-400 text-xs">
           {businesses.length} negócio{businesses.length !== 1 ? 's' : ''}
         </span>
@@ -432,27 +443,11 @@ const Pipeline = () => {
           
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setShowAddBusiness(true)}
+              onClick={() => setShowAddClient(true)}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
             >
               <UserPlus size={18} />
               Novo Negócio
-            </button>
-            
-            <button
-              onClick={() => setShowAddClient(true)}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              <Users size={18} />
-              Novo Cliente
-            </button>
-            
-            <button
-              onClick={() => setShowAddCompany(true)}
-              className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              <Building2 size={18} />
-              Nova Empresa
             </button>
             
             <button
@@ -473,13 +468,6 @@ const Pipeline = () => {
                   Serviços
                 </button>
                 
-                <button
-                  onClick={() => navigate('/stages')}
-                  className="flex items-center gap-2 bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                >
-                  <Move size={18} />
-                  Etapas
-                </button>
               </>
             )}
           </div>
@@ -505,276 +493,7 @@ const Pipeline = () => {
                     onBusinessClick={handleBusinessClick}
                     onRemoveBusiness={handleRemoveBusiness}
                     services={services}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {showAddBusiness && (
-        <AddBusinessModal
-          onClose={() => setShowAddBusiness(false)}
-          services={services}
-          userData={userData}
-          stages={stages}
-          type="business"
-        />
-      )}
-      
-      {showAddClient && (
-        <AddBusinessModal
-          onClose={() => setShowAddClient(false)}
-          services={services}
-          userData={userData}
-          stages={stages}
-          type="client"
-        />
-      )}
-      
-      {showAddCompany && (
-        <AddBusinessModal
-          onClose={() => setShowAddCompany(false)}
-          services={services}
-          userData={userData}
-          stages={stages}
-          type="company"
-        />
-      )}
-    </div>
-  );
-};
-
-export default Pipeline;
-              services={services}
-            />
-          ))
-        )}
-      </div>
-    </div>
-  );
-};
-
-const Pipeline = () => {
-  const navigate = useNavigate();
-  const { isDarkMode } = useTheme();
-  const [clients, setClients] = useState<ClientType[]>([]);
-  const [services, setServices] = useState<ServiceType[]>([]);
-  const [stages, setStages] = useState<PipelineStageType[]>([]);
-  const [userData, setUserData] = useState<UserType | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [showAddClient, setShowAddClient] = useState(false);
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (!auth.currentUser) return;
-      
-      try {
-        const userDoc = await doc(db, 'users', auth.currentUser.uid);
-        const userSnapshot = await getDoc(userDoc);
-        if (userSnapshot.exists()) {
-          setUserData(userSnapshot.data() as UserType);
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      }
-    };
-
-    fetchUserData();
-  }, []);
-
-  useEffect(() => {
-    if (!auth.currentUser || !userData) return;
-
-    // Fetch pipeline stages
-    const stagesQuery = query(
-      collection(db, 'pipelineStages'),
-      orderBy('position', 'asc')
-    );
-
-    const unsubscribeStages = onSnapshot(stagesQuery, (snapshot) => {
-      const stagesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as PipelineStageType[];
-      setStages(stagesData);
-    });
-    // Fetch services
-    const servicesQuery = query(
-      collection(db, 'services'),
-      where('active', '==', true)
-    );
-
-    const unsubscribeServices = onSnapshot(servicesQuery, (snapshot) => {
-      const servicesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as ServiceType[];
-      setServices(servicesData);
-    });
-
-    // Fetch clients based on user role
-    let clientsQuery;
-    if (userData.role === 'admin') {
-      clientsQuery = query(collection(db, 'clients'));
-    } else {
-      clientsQuery = query(
-        collection(db, 'clients'),
-        where('assignedTo', '==', auth.currentUser.uid)
-      );
-    }
-
-    const unsubscribeClients = onSnapshot(clientsQuery, (snapshot) => {
-      const clientsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as ClientType[];
-      
-      clientsData.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-      setClients(clientsData);
-      setLoading(false);
-    });
-
-    return () => {
-      unsubscribeStages();
-      unsubscribeServices();
-      unsubscribeClients();
-    };
-  }, [userData]);
-
-  const handleStageChange = async (clientId: string, newStage: string) => {
-    try {
-      const client = clients.find(c => c.id === clientId);
-      if (!client) return;
-
-      await updateDoc(doc(db, 'clients', clientId), {
-        stage: newStage,
-        updatedAt: new Date().toISOString()
-      });
-
-      // Add interaction record
-      await addDoc(collection(db, 'interactions'), {
-        clientId,
-        userId: auth.currentUser?.uid,
-        userName: userData?.name || 'Unknown',
-        type: 'stage_change',
-        title: 'Mudança de Estágio',
-        description: `Cliente movido de "${client.stage}" para "${newStage}"`,
-        date: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        metadata: {
-          previousStage: client.stage,
-          newStage
-        }
-      });
-    } catch (error) {
-      console.error('Error updating stage:', error);
-    }
-  };
-
-  const handleClientClick = (clientId: string) => {
-    navigate(`/client/${clientId}`);
-  };
-
-  const handleRemoveClient = (removedId: string) => {
-    setClients(prev => prev.filter(client => client.id !== removedId));
-  };
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Carregando pipeline...</div>
-      </div>
-    );
-  }
-
-  const activeStages = stages.filter(stage => stage.active);
-  return (
-    <div className={`flex h-screen ${isDarkMode ? 'bg-black text-gray-100' : 'bg-white text-gray-900'}`}>
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        toggleSidebar={toggleSidebar}
-        userData={userData}
-      />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className={`flex items-center justify-between p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`}>
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={toggleSidebar}
-              className={`w-10 h-10 flex items-center justify-center focus:outline-none rounded-lg border-2 transition-all ${
-                isDarkMode 
-                  ? 'text-gray-300 hover:text-white bg-gray-800 border-gray-700 hover:border-gray-600'
-                  : 'text-gray-600 hover:text-gray-900 bg-gray-100 border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              <Menu size={24} />
-            </button>
-            <h1 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Pipeline CRM
-            </h1>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowAddClient(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              <UserPlus size={18} />
-              Novo Cliente
-            </button>
-            
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              <BarChart3 size={18} />
-              Dashboard
-            </button>
-            
-            {userData?.role === 'admin' && (
-              <button
-                onClick={() => navigate('/services')}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-              >
-                <Settings size={18} />
-                Serviços
-              </button>
-            )}
-          </div>
-                <button
-                  onClick={() => navigate('/stages')}
-                  className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                >
-                  <Move size={18} />
-                  Etapas
-                </button>
-        </div>
-
-        <div className="flex-1 overflow-x-auto p-6">
-          <div className={`grid gap-4 min-w-max ${
-            activeStages.length <= 3 ? 'grid-cols-1 lg:grid-cols-3' :
-            activeStages.length <= 5 ? 'grid-cols-1 lg:grid-cols-3 xl:grid-cols-5' :
-            'grid-cols-1 lg:grid-cols-3 xl:grid-cols-6'
-          }`}>
-            {activeStages.map((stage) => {
-              const stageClients = clients.filter(client => client.stage === stage.id);
-              
-              return (
-                <div key={stage.id} className="min-w-[280px]">
-                  <PipelineStage
-                    stage={stage}
-                    clients={stageClients}
-                    onDrop={handleStageChange}
-                    onClientClick={handleClientClick}
-                    onRemoveClient={handleRemoveClient}
-                    services={services}
+                    navigate={navigate}
                   />
                 </div>
               );
