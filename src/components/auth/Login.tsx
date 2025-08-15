@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../firebase';
+import { auth, db } from '../../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const Login = () => {
@@ -71,12 +72,31 @@ const Login = () => {
         throw new Error('No user data available');
       }
 
-      // Check email verification
-      if (!user.emailVerified) {
-        await auth.signOut();
-        setError('Por favor, verifique seu email antes de fazer login.');
-        navigate('/verify-email');
-        return;
+      // Check email verification using Firestore document
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userData = userDoc.exists() ? userDoc.data() : null;
+        
+        // Use Firestore emailVerified field if available, otherwise fall back to Firebase Auth
+        const isEmailVerified = userData?.emailVerified !== undefined 
+          ? userData.emailVerified 
+          : user.emailVerified;
+        
+        if (!isEmailVerified) {
+          await auth.signOut();
+          setError('Por favor, verifique seu email antes de fazer login.');
+          navigate('/verify-email');
+          return;
+        }
+      } catch (firestoreError) {
+        console.error('Error fetching user data from Firestore:', firestoreError);
+        // Fall back to Firebase Auth email verification if Firestore fails
+        if (!user.emailVerified) {
+          await auth.signOut();
+          setError('Por favor, verifique seu email antes de fazer login.');
+          navigate('/verify-email');
+          return;
+        }
       }
 
       // Clear any existing errors

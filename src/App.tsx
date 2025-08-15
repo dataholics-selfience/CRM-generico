@@ -67,14 +67,14 @@ function App() {
           <Route path="/register" element={!user ? <Register /> : <Navigate to="/" replace />} />
           <Route path="/forgot-password" element={!user ? <ForgotPassword /> : <Navigate to="/" replace />} />
           <Route path="/verify-email" element={<EmailVerification />} />
-          <Route path="/profile" element={user?.emailVerified ? <UserManagement /> : <Navigate to="/verify-email" replace />} />
-          <Route path="/client/:id" element={user?.emailVerified ? <ClientDetail /> : <Navigate to="/verify-email" replace />} />
-          <Route path="/services" element={user?.emailVerified && userData?.role === 'admin' ? <ServiceManagement /> : <Navigate to="/" replace />} />
-          <Route path="/dashboard" element={user?.emailVerified ? <Dashboard /> : <Navigate to="/verify-email" replace />} />
+          <Route path="/profile" element={userData?.emailVerified ? <UserManagement /> : <Navigate to="/verify-email" replace />} />
+          <Route path="/client/:id" element={userData?.emailVerified ? <ClientDetail /> : <Navigate to="/verify-email" replace />} />
+          <Route path="/services" element={userData?.emailVerified && userData?.role === 'admin' ? <ServiceManagement /> : <Navigate to="/" replace />} />
+          <Route path="/dashboard" element={userData?.emailVerified ? <Dashboard /> : <Navigate to="/verify-email" replace />} />
           <Route path="/account-deleted" element={<AccountDeleted />} />
           <Route path="/" element={
             user ? (
-              user.emailVerified ? (
+              userData?.emailVerified ? (
                 <Pipeline />
               ) : (
                 <Navigate to="/verify-email" replace />
