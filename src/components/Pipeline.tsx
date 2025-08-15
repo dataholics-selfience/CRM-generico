@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Plus, Users, Building2, MapPin, Mail, Phone, Linkedin,
-  GripVertical, Trash2, Menu, BarChart3, Settings, UserPlus, Move
+  GripVertical, Trash2, Menu, BarChart3, Settings, UserPlus, Move, Edit
 } from 'lucide-react';
 import { collection, query, where, getDocs, deleteDoc, doc, updateDoc, addDoc, onSnapshot, getDoc, orderBy } from 'firebase/firestore';
 import { db, auth } from '../firebase';
