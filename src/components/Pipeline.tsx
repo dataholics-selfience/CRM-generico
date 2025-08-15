@@ -2,29 +2,33 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Plus, Users, Building2, MapPin, Mail, Phone, Linkedin,
-  GripVertical, Trash2, Menu, BarChart3, Settings, UserPlus
+  GripVertical, Trash2, Menu, BarChart3, Settings, UserPlus, Move
 } from 'lucide-react';
 import { collection, query, where, getDocs, deleteDoc, doc, updateDoc, addDoc, onSnapshot, getDoc, orderBy } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { ClientType, ServiceType, UserType, PipelineStageType } from '../types';
+import { ClientType, ServiceType, UserType, PipelineStageType, BusinessType, ContactType, CompanyType } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 import Sidebar from './Sidebar';
-import AddClientModal from './AddClientModal';
+import AddBusinessModal from './AddBusinessModal';
 
-const ClientCard = ({ 
-  client, 
+const BusinessCard = ({ 
+  business, 
+  company,
+  contacts,
   onClick, 
   onRemove,
   services
 }: { 
-  client: ClientType;
+  business: BusinessType;
+  company: CompanyType | null;
+  contacts: ContactType[];
   onClick: () => void;
   onRemove: (id: string) => void;
   services: ServiceType[];
 }) => {
   const [isRemoving, setIsRemoving] = useState(false);
-  const service = services.find(s => s.id === client.serviceId);
-  const plan = service?.plans.find(p => p.id === client.planId);
+  const service = services.find(s => s.id === business.serviceId);
+  const plan = service?.plans.find(p => p.id === business.planId);
 
   const handleRemove = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -34,17 +38,17 @@ const ClientCard = ({
     setIsRemoving(true);
 
     try {
-      await deleteDoc(doc(db, 'clients', client.id));
-      onRemove(client.id);
+      await deleteDoc(doc(db, 'businesses', business.id));
+      onRemove(business.id);
     } catch (error) {
-      console.error('Error removing client:', error);
+      console.error('Error removing business:', error);
     } finally {
       setIsRemoving(false);
     }
   };
 
   const handleDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.setData('text/plain', client.id);
+    e.dataTransfer.setData('text/plain', business.id);
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -59,8 +63,9 @@ const ClientCard = ({
         <div className="flex items-center gap-2 flex-1">
           <GripVertical size={16} className="text-gray-400 group-hover:text-gray-300" />
           <div className="flex-1">
-            <h3 className="text-white font-medium text-sm">{client.nome}</h3>
-            <p className="text-gray-400 text-xs">{client.empresa}</p>
+            <h3 className="text-white font-medium text-sm">{company?.nome || 'Empresa não encontrada'}</h3>
+            <p className="text-gray-400 text-xs">{business.nome}</p>
+            <p className="text-green-400 text-xs font-medium">R$ {business.valor.toLocaleString()}</p>
           </div>
         </div>
         <button
@@ -77,14 +82,18 @@ const ClientCard = ({
       </div>
 
       <div className="space-y-2 text-xs">
-        <div className="flex items-center gap-2 text-gray-300">
-          <Building2 size={12} className="text-blue-400" />
-          <span className="truncate">{client.segmento}</span>
-        </div>
-        <div className="flex items-center gap-2 text-gray-300">
-          <MapPin size={12} className="text-green-400" />
-          <span className="truncate">{client.regiao}</span>
-        </div>
+        {company && (
+          <>
+            <div className="flex items-center gap-2 text-gray-300">
+              <Building2 size={12} className="text-blue-400" />
+              <span className="truncate">{company.segmento}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-300">
+              <MapPin size={12} className="text-green-400" />
+              <span className="truncate">{company.regiao}</span>
+            </div>
+          </>
+        )}
         {service && (
           <div className="bg-gray-800 rounded p-2 mt-2">
             <div className="text-blue-400 font-medium">{service.name}</div>
@@ -98,18 +107,18 @@ const ClientCard = ({
       </div>
 
       <div className="flex gap-2 mt-3">
-        {client.email && (
+        {contacts.length > 0 && contacts[0].email && (
           <a
-            href={`mailto:${client.email}`}
+            href={`mailto:${contacts[0].email}`}
             onClick={(e) => e.stopPropagation()}
             className="text-blue-400 hover:text-blue-300"
           >
             <Mail size={12} />
           </a>
         )}
-        {client.whatsapp && (
+        {contacts.length > 0 && contacts[0].whatsapp && (
           <a
-            href={`https://wa.me/${client.whatsapp.replace(/\D/g, '')}`}
+            href={`https://wa.me/${contacts[0].whatsapp.replace(/\D/g, '')}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
@@ -118,9 +127,9 @@ const ClientCard = ({
             <Phone size={12} />
           </a>
         )}
-        {client.linkedin && (
+        {contacts.length > 0 && contacts[0].linkedin && (
           <a
-            href={client.linkedin}
+            href={contacts[0].linkedin}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
@@ -129,6 +138,9 @@ const ClientCard = ({
             <Linkedin size={12} />
           </a>
         )}
+        {contacts.length > 1 && (
+          <span className="text-gray-400 text-xs">+{contacts.length - 1}</span>
+        )}
       </div>
     </div>
   );
@@ -136,17 +148,21 @@ const ClientCard = ({
 
 const PipelineStage = ({ 
   stage, 
-  clients, 
+  businesses,
+  companies,
+  contacts,
   onDrop, 
-  onClientClick,
-  onRemoveClient,
+  onBusinessClick,
+  onRemoveBusiness,
   services
 }: { 
   stage: PipelineStageType;
-  clients: ClientType[];
-  onDrop: (clientId: string, newStage: string) => void;
-  onClientClick: (clientId: string) => void;
-  onRemoveClient: (id: string) => void;
+  businesses: BusinessType[];
+  companies: CompanyType[];
+  contacts: ContactType[];
+  onDrop: (businessId: string, newStage: string) => void;
+  onBusinessClick: (businessId: string) => void;
+  onRemoveBusiness: (id: string) => void;
   services: ServiceType[];
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -166,9 +182,9 @@ const PipelineStage = ({
     e.preventDefault();
     setIsDragOver(false);
     
-    const clientId = e.dataTransfer.getData('text/plain');
-    if (clientId) {
-      onDrop(clientId, stage.id);
+    const businessId = e.dataTransfer.getData('text/plain');
+    if (businessId) {
+      onDrop(businessId, stage.id);
     }
   };
 
@@ -188,23 +204,349 @@ const PipelineStage = ({
           {stage.name}
         </h3>
         <span className="text-gray-400 text-xs">
-          {clients.length} cliente{clients.length !== 1 ? 's' : ''}
+          {businesses.length} negócio{businesses.length !== 1 ? 's' : ''}
         </span>
       </div>
       
       <div className="space-y-2">
-        {clients.length === 0 ? (
+        {businesses.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Plus size={24} className="mx-auto mb-2 opacity-50" />
-            <p className="text-xs">Arraste clientes aqui</p>
+            <p className="text-xs">Arraste negócios aqui</p>
           </div>
         ) : (
-          clients.map((client) => (
-            <ClientCard
-              key={client.id}
-              client={client}
-              onRemove={onRemoveClient}
-              onClick={() => onClientClick(client.id)}
+          businesses.map((business) => {
+            const company = companies.find(c => c.id === business.companyId);
+            const businessContacts = contacts.filter(c => business.contactIds.includes(c.id));
+            
+            return (
+              <BusinessCard
+                key={business.id}
+                business={business}
+                company={company || null}
+                contacts={businessContacts}
+                onRemove={onRemoveBusiness}
+                onClick={() => onBusinessClick(business.id)}
+                services={services}
+              />
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+};
+
+const Pipeline = () => {
+  const navigate = useNavigate();
+  const { isDarkMode } = useTheme();
+  const [businesses, setBusinesses] = useState<BusinessType[]>([]);
+  const [companies, setCompanies] = useState<CompanyType[]>([]);
+  const [contacts, setContacts] = useState<ContactType[]>([]);
+  const [services, setServices] = useState<ServiceType[]>([]);
+  const [stages, setStages] = useState<PipelineStageType[]>([]);
+  const [userData, setUserData] = useState<UserType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showAddBusiness, setShowAddBusiness] = useState(false);
+  const [showAddClient, setShowAddClient] = useState(false);
+  const [showAddCompany, setShowAddCompany] = useState(false);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!auth.currentUser) return;
+      
+      try {
+        const userDoc = await doc(db, 'users', auth.currentUser.uid);
+        const userSnapshot = await getDoc(userDoc);
+        if (userSnapshot.exists()) {
+          setUserData(userSnapshot.data() as UserType);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  useEffect(() => {
+    if (!auth.currentUser || !userData) return;
+
+    // Fetch pipeline stages
+    const stagesQuery = query(
+      collection(db, 'pipelineStages'),
+      orderBy('position', 'asc')
+    );
+
+    const unsubscribeStages = onSnapshot(stagesQuery, (snapshot) => {
+      const stagesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as PipelineStageType[];
+      setStages(stagesData);
+    });
+
+    // Fetch services
+    const servicesQuery = query(
+      collection(db, 'services'),
+      where('active', '==', true)
+    );
+
+    const unsubscribeServices = onSnapshot(servicesQuery, (snapshot) => {
+      const servicesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as ServiceType[];
+      setServices(servicesData);
+    });
+
+    // Fetch businesses based on user role
+    let businessesQuery;
+    if (userData.role === 'admin') {
+      businessesQuery = query(collection(db, 'businesses'));
+    } else {
+      businessesQuery = query(
+        collection(db, 'businesses'),
+        where('assignedTo', '==', auth.currentUser.uid)
+      );
+    }
+
+    const unsubscribeBusinesses = onSnapshot(businessesQuery, (snapshot) => {
+      const businessesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as BusinessType[];
+      
+      businessesData.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      setBusinesses(businessesData);
+    });
+
+    // Fetch companies
+    const companiesQuery = query(collection(db, 'companies'));
+    const unsubscribeCompanies = onSnapshot(companiesQuery, (snapshot) => {
+      const companiesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as CompanyType[];
+      setCompanies(companiesData);
+    });
+
+    // Fetch contacts
+    const contactsQuery = query(collection(db, 'contacts'));
+    const unsubscribeContacts = onSnapshot(contactsQuery, (snapshot) => {
+      const contactsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as ContactType[];
+      setContacts(contactsData);
+      setLoading(false);
+    });
+
+    return () => {
+      unsubscribeStages();
+      unsubscribeServices();
+      unsubscribeBusinesses();
+      unsubscribeCompanies();
+      unsubscribeContacts();
+    };
+  }, [userData]);
+
+  const handleStageChange = async (businessId: string, newStage: string) => {
+    try {
+      const business = businesses.find(b => b.id === businessId);
+      if (!business) return;
+
+      await updateDoc(doc(db, 'businesses', businessId), {
+        stage: newStage,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Add interaction record
+      await addDoc(collection(db, 'interactions'), {
+        businessId,
+        userId: auth.currentUser?.uid,
+        userName: userData?.name || 'Unknown',
+        type: 'stage_change',
+        title: 'Mudança de Estágio',
+        description: `Negócio movido de "${business.stage}" para "${newStage}"`,
+        date: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        metadata: {
+          previousStage: business.stage,
+          newStage
+        }
+      });
+    } catch (error) {
+      console.error('Error updating stage:', error);
+    }
+  };
+
+  const handleBusinessClick = (businessId: string) => {
+    navigate(`/business/${businessId}`);
+  };
+
+  const handleRemoveBusiness = (removedId: string) => {
+    setBusinesses(prev => prev.filter(business => business.id !== removedId));
+  };
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white">Carregando pipeline...</div>
+      </div>
+    );
+  }
+
+  const activeStages = stages.filter(stage => stage.active);
+
+  return (
+    <div className={`flex h-screen ${isDarkMode ? 'bg-black text-gray-100' : 'bg-white text-gray-900'}`}>
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        toggleSidebar={toggleSidebar}
+        userData={userData}
+      />
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className={`flex items-center justify-between p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`}>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={toggleSidebar}
+              className={`w-10 h-10 flex items-center justify-center focus:outline-none rounded-lg border-2 transition-all ${
+                isDarkMode 
+                  ? 'text-gray-300 hover:text-white bg-gray-800 border-gray-700 hover:border-gray-600'
+                  : 'text-gray-600 hover:text-gray-900 bg-gray-100 border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <Menu size={24} />
+            </button>
+            <h1 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              Pipeline CRM
+            </h1>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowAddBusiness(true)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              <UserPlus size={18} />
+              Novo Negócio
+            </button>
+            
+            <button
+              onClick={() => setShowAddClient(true)}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              <Users size={18} />
+              Novo Cliente
+            </button>
+            
+            <button
+              onClick={() => setShowAddCompany(true)}
+              className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              <Building2 size={18} />
+              Nova Empresa
+            </button>
+            
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              <BarChart3 size={18} />
+              Dashboard
+            </button>
+            
+            {userData?.role === 'admin' && (
+              <>
+                <button
+                  onClick={() => navigate('/services')}
+                  className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  <Settings size={18} />
+                  Serviços
+                </button>
+                
+                <button
+                  onClick={() => navigate('/stages')}
+                  className="flex items-center gap-2 bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  <Move size={18} />
+                  Etapas
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-x-auto p-6">
+          <div className={`grid gap-4 min-w-max ${
+            activeStages.length <= 3 ? 'grid-cols-1 lg:grid-cols-3' :
+            activeStages.length <= 5 ? 'grid-cols-1 lg:grid-cols-3 xl:grid-cols-5' :
+            'grid-cols-1 lg:grid-cols-3 xl:grid-cols-6'
+          }`}>
+            {activeStages.map((stage) => {
+              const stageBusinesses = businesses.filter(business => business.stage === stage.id);
+              
+              return (
+                <div key={stage.id} className="min-w-[280px]">
+                  <PipelineStage
+                    stage={stage}
+                    businesses={stageBusinesses}
+                    companies={companies}
+                    contacts={contacts}
+                    onDrop={handleStageChange}
+                    onBusinessClick={handleBusinessClick}
+                    onRemoveBusiness={handleRemoveBusiness}
+                    services={services}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {showAddBusiness && (
+        <AddBusinessModal
+          onClose={() => setShowAddBusiness(false)}
+          services={services}
+          userData={userData}
+          stages={stages}
+          type="business"
+        />
+      )}
+      
+      {showAddClient && (
+        <AddBusinessModal
+          onClose={() => setShowAddClient(false)}
+          services={services}
+          userData={userData}
+          stages={stages}
+          type="client"
+        />
+      )}
+      
+      {showAddCompany && (
+        <AddBusinessModal
+          onClose={() => setShowAddCompany(false)}
+          services={services}
+          userData={userData}
+          stages={stages}
+          type="company"
+        />
+      )}
+    </div>
+  );
+};
+
+export default Pipeline;
               services={services}
             />
           ))

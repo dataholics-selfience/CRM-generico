@@ -75,6 +75,49 @@ export interface ClientType {
   createdBy: string;
 }
 
+export interface BusinessType {
+  id: string;
+  nome: string; // Nome do negócio
+  valor: number; // Valor do negócio
+  companyId: string; // ID da empresa
+  contactIds: string[]; // IDs dos contatos
+  serviceId: string;
+  planId: string;
+  stage: string; // ID do estágio
+  assignedTo: string; // userId do vendedor responsável
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  description?: string; // Descrição do negócio
+}
+
+export interface ContactType {
+  id: string;
+  nome: string;
+  email: string;
+  whatsapp: string;
+  linkedin: string;
+  cargoAlvo: string;
+  companyId: string; // ID da empresa
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
+export interface CompanyType {
+  id: string;
+  nome: string;
+  cnpj: string;
+  segmento: string;
+  regiao: string;
+  tamanho: string;
+  faturamento: string;
+  dores: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
 export interface InteractionType {
   id: string;
   clientId: string;
