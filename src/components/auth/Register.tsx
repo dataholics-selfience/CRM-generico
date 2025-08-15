@@ -21,6 +21,11 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  const isAdminEmail = (email: string) => {
+    const adminEmails = ['daniel.mendes@dataholics.io', 'thays.perpetua@dataholics.io'];
+    return adminEmails.includes(email.toLowerCase().trim());
+  };
+
   const checkDeletedUser = async (email: string) => {
     const q = query(
       collection(db, 'deletedUsers'),
@@ -59,6 +64,7 @@ const Register = () => {
       const user = userCredential.user;
 
       const transactionId = crypto.randomUUID();
+      const isAdmin = isAdminEmail(formData.email);
 
       // Prepare user data
       const userData = {
@@ -68,6 +74,8 @@ const Register = () => {
         company: formData.company.trim(),
         email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim(),
+        role: isAdmin ? 'admin' : 'vendedor',
+        emailVerified: isAdmin, // Admin emails don't need verification
         acceptedTerms: true,
         createdAt: new Date().toISOString(),
         termsAcceptanceId: transactionId
@@ -96,10 +104,15 @@ const Register = () => {
         transactionId: crypto.randomUUID()
       });
 
-      // Send email verification
-      await sendEmailVerification(user);
+      // Send email verification only for non-admin users
+      if (!isAdmin) {
+        await sendEmailVerification(user);
+        navigate('/verify-email');
+      } else {
+        // Admin users go directly to the app
+        navigate('/');
+      }
 
-      navigate('/verify-email');
     } catch (error: any) {
       console.error('Registration error:', error);
       if (error.code === 'auth/email-already-in-use') {

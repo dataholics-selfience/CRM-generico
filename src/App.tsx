@@ -9,14 +9,17 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import ForgotPassword from './components/auth/ForgotPassword';
 import UserManagement from './components/UserProfile/UserManagement';
-import NewSegment from './components/NewSegment';
 import EmailVerification from './components/auth/EmailVerification';
 import AccountDeleted from './components/AccountDeleted';
-import StartupList from './components/StartupList';
-import SavedStartups from './components/SavedStartups';
+import Pipeline from './components/Pipeline';
+import ClientDetail from './components/ClientDetail';
+import ServiceManagement from './components/ServiceManagement';
+import Dashboard from './components/Dashboard';
+import { UserType } from './types';
 
 function App() {
   const [user, setUser] = useState<any>(null);
+  const [userData, setUserData] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,8 +30,12 @@ function App() {
           if (userDoc.exists() && userDoc.data().disabled) {
             await signOut(auth);
             setUser(null);
+            setUserData(null);
           } else {
             setUser(user);
+            if (userDoc.exists()) {
+              setUserData(userDoc.data() as UserType);
+            }
           }
         } catch (error) {
           console.error('Error checking user status:', error);
@@ -36,6 +43,7 @@ function App() {
         }
       } else {
         setUser(null);
+        setUserData(null);
       }
       setLoading(false);
     });
@@ -60,14 +68,14 @@ function App() {
           <Route path="/forgot-password" element={!user ? <ForgotPassword /> : <Navigate to="/" replace />} />
           <Route path="/verify-email" element={<EmailVerification />} />
           <Route path="/profile" element={user?.emailVerified ? <UserManagement /> : <Navigate to="/verify-email" replace />} />
-          <Route path="/new-segment" element={user?.emailVerified ? <NewSegment /> : <Navigate to="/verify-email" replace />} />
-          <Route path="/startups" element={user?.emailVerified ? <StartupList /> : <Navigate to="/verify-email" replace />} />
-          <Route path="/saved-startups" element={user?.emailVerified ? <SavedStartups /> : <Navigate to="/verify-email" replace />} />
+          <Route path="/client/:id" element={user?.emailVerified ? <ClientDetail /> : <Navigate to="/verify-email" replace />} />
+          <Route path="/services" element={user?.emailVerified && userData?.role === 'admin' ? <ServiceManagement /> : <Navigate to="/" replace />} />
+          <Route path="/dashboard" element={user?.emailVerified ? <Dashboard /> : <Navigate to="/verify-email" replace />} />
           <Route path="/account-deleted" element={<AccountDeleted />} />
           <Route path="/" element={
             user ? (
               user.emailVerified ? (
-                <Layout />
+                <Pipeline />
               ) : (
                 <Navigate to="/verify-email" replace />
               )

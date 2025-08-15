@@ -28,9 +28,83 @@ export interface UserType {
   cpf: string;
   company: string;
   phone: string;
+  role: 'admin' | 'vendedor';
   createdAt: string;
+  emailVerified?: boolean;
 }
 
+export interface ServiceType {
+  id: string;
+  name: string;
+  description: string;
+  plans: ServicePlan[];
+  createdAt: string;
+  createdBy: string;
+  active: boolean;
+}
+
+export interface ServicePlan {
+  id: string;
+  name: string;
+  price: number;
+  duration: string; // "mensal", "anual", "único"
+  features: string[];
+  active: boolean;
+}
+
+export interface ClientType {
+  id: string;
+  nome: string;
+  empresa: string;
+  cnpj: string;
+  email: string;
+  whatsapp: string;
+  linkedin: string;
+  segmento: string;
+  regiao: string;
+  tamanho: string;
+  faturamento: string;
+  cargoAlvo: string;
+  dores: string;
+  stage: 'mapeada' | 'selecionada' | 'contatada' | 'entrevistada' | 'poc' | 'proposta' | 'negociacao' | 'fechada' | 'perdida';
+  serviceId: string;
+  planId: string;
+  assignedTo: string; // userId do vendedor responsável
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
+export interface InteractionType {
+  id: string;
+  clientId: string;
+  userId: string;
+  userName: string;
+  type: 'call' | 'email' | 'meeting' | 'note' | 'stage_change' | 'service_change';
+  title: string;
+  description: string;
+  date: string;
+  createdAt: string;
+  metadata?: {
+    previousStage?: string;
+    newStage?: string;
+    previousService?: string;
+    newService?: string;
+  };
+}
+
+export interface SaleType {
+  id: string;
+  clientId: string;
+  serviceId: string;
+  planId: string;
+  value: number;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  createdBy: string;
+  createdAt: string;
+  closedAt?: string;
+  notes?: string;
+}
 
 export interface StartupListType {
   id: string;
@@ -38,8 +112,8 @@ export interface StartupListType {
   userEmail: string;
   segmentTitle: string;
   ratingExplanation: string;
-  startups: StartupType[]; // Keep for backward compatibility
-  empresas?: StartupType[]; // New field for companies
+  startups: StartupType[];
+  empresas?: StartupType[];
   projectPlanning: ProjectPhaseType[];
   expectedResults: string[];
   competitiveAdvantages: string[];
@@ -97,4 +171,22 @@ export interface ProjectPhaseType {
   phase: string;
   duration: string;
   description: string;
+}
+
+export interface DashboardMetrics {
+  totalClients: number;
+  newClientsThisMonth: number;
+  totalSales: number;
+  salesThisMonth: number;
+  conversionRate: number;
+  averageTicket: number;
+  pipelineValue: number;
+  clientsByStage: Record<string, number>;
+  salesByService: Record<string, number>;
+  topPerformers: Array<{
+    userId: string;
+    userName: string;
+    sales: number;
+    clients: number;
+  }>;
 }
