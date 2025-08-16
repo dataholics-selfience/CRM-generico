@@ -324,7 +324,24 @@ const BusinessDetail = () => {
       </div>
 
       <div className="p-6">
-        <div className="flex gap-6">
+        <div className="space-y-6">
+          {/* Stage Selector at the top */}
+          <div className="bg-gray-800 rounded-lg p-6">
+            <h3 className="text-lg font-bold text-white mb-4">Estágio Atual</h3>
+            <select
+              value={business.stage}
+              onChange={(e) => handleStageChange(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {stages.map((stage) => (
+                <option key={stage.id} value={stage.id}>
+                  {stage.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex gap-6">
           {/* Business and Company Information */}
           <div className="flex-1 space-y-6">
             {/* Business Details */}
@@ -401,6 +418,35 @@ const BusinessDetail = () => {
                   )}
                 </div>
               </div>
+
+              {/* Service Information moved here */}
+              {service && (
+                <div className="mt-6 pt-6 border-t border-gray-700">
+                  <h3 className="text-lg font-bold text-white mb-4">Informações do Serviço</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="font-medium text-blue-400">{service.name}</h4>
+                      <p className="text-gray-400 text-sm">{service.description}</p>
+                    </div>
+                    {plan && (
+                      <div className="bg-gray-700 rounded p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-white">{plan.name}</span>
+                          <div className="flex items-center gap-1">
+                            <DollarSign size={14} className="text-green-400" />
+                            <span className="text-green-400 font-bold">
+                              R$ {plan.price.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {plan.features.join(' • ')}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-300 mb-2">Descrição</label>
@@ -663,57 +709,8 @@ const BusinessDetail = () => {
             )}
           </div>
 
-          {/* Timeline Sidebar - 60% width */}
-          <div className="w-[60%] space-y-6">
-            {/* Stage */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-lg font-bold text-white mb-4">Estágio Atual</h3>
-              <div className="space-y-2">
-                {stages.map((stage) => (
-                  <button
-                    key={stage.id}
-                    onClick={() => handleStageChange(stage.id)}
-                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                      business.stage === stage.id
-                        ? `${stage.color}`
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                  >
-                    {stage.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Service Information */}
-            {service && (
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-lg font-bold text-white mb-4">Serviço</h3>
-                <div className="space-y-3">
-                  <div>
-                    <h4 className="font-medium text-blue-400">{service.name}</h4>
-                    <p className="text-gray-400 text-sm">{service.description}</p>
-                  </div>
-                  {plan && (
-                    <div className="bg-gray-700 rounded p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-white">{plan.name}</span>
-                        <div className="flex items-center gap-1">
-                          <DollarSign size={14} className="text-green-400" />
-                          <span className="text-green-400 font-bold">
-                            R$ {plan.price.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {plan.features.join(' • ')}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
+          {/* Timeline Sidebar */}
+          <div className="w-96 space-y-6">
             {/* Timeline */}
             <div className="bg-gray-800 rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
@@ -737,6 +734,7 @@ const BusinessDetail = () => {
                 )}
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
