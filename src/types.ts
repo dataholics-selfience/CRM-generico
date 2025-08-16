@@ -217,7 +217,7 @@ export interface ProjectPhaseType {
 }
 
 export interface DashboardMetrics {
-  totalClients: number;
+  totalClients: number; // Total de negócios
   newClientsThisMonth: number;
   totalSales: number;
   salesThisMonth: number;

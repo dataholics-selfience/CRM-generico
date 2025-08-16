@@ -229,9 +229,9 @@ const ServiceCard = ({
   onToggleStatus: (id: string, currentStatus: boolean) => void;
 }) => {
   return (
-    <div className="bg-gray-800 rounded-lg p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="bg-gray-800 rounded-lg p-6 flex gap-6 h-[400px]">
       {/* Informações do Serviço - 2/3 da largura */}
-      <div className="lg:col-span-2 space-y-4">
+      <div className="w-1/2 space-y-4 overflow-y-auto pr-4 custom-scrollbar">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
@@ -283,7 +283,7 @@ const ServiceCard = ({
       </div>
 
       {/* Timeline/Ações - 1/3 da largura */}
-      <div className="space-y-4">
+      <div className="w-1/2 space-y-4 overflow-y-auto pl-4 border-l border-gray-700 custom-scrollbar">
         <h4 className="text-sm font-medium text-gray-300">Ações:</h4>
         
         <div className="space-y-2">

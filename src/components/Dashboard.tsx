@@ -42,22 +42,22 @@ const Dashboard = () => {
 
     const fetchDashboardData = async () => {
       try {
-        // Fetch clients based on user role
-        let clientsQuery;
+        // Fetch businesses based on user role
+        let businessesQuery;
         if (userData.role === 'admin') {
-          clientsQuery = query(collection(db, 'clients'));
+          businessesQuery = query(collection(db, 'businesses'));
         } else {
-          clientsQuery = query(
-            collection(db, 'clients'),
+          businessesQuery = query(
+            collection(db, 'businesses'),
             where('assignedTo', '==', auth.currentUser.uid)
           );
         }
 
-        const clientsSnapshot = await getDocs(clientsQuery);
-        const clients = clientsSnapshot.docs.map(doc => ({
+        const businessesSnapshot = await getDocs(businessesQuery);
+        const businesses = businessesSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        })) as ClientType[];
+        })) as BusinessType[];
 
         // Fetch services
         const servicesSnapshot = await getDocs(collection(db, 'services'));
@@ -66,52 +66,73 @@ const Dashboard = () => {
           ...doc.data()
         })) as ServiceType[];
 
+        // Fetch pipeline stages to identify "Fechada" stage
+        const stagesSnapshot = await getDocs(collection(db, 'pipelineStages'));
+        const stages = stagesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as PipelineStageType[];
+        
+        const closedStage = stages.find(stage => 
+          stage.name.toLowerCase().includes('fechada') || 
+          stage.name.toLowerCase().includes('fechado') ||
+          stage.name.toLowerCase().includes('won') ||
+          stage.name.toLowerCase().includes('closed')
+        );
         // Calculate metrics
         const now = new Date();
         const currentMonthStart = startOfMonth(now);
         const currentMonthEnd = endOfMonth(now);
 
-        const newClientsThisMonth = clients.filter(client => {
-          const createdAt = new Date(client.createdAt);
+        const newBusinessesThisMonth = businesses.filter(business => {
+          const createdAt = new Date(business.createdAt);
           return createdAt >= currentMonthStart && createdAt <= currentMonthEnd;
         }).length;
 
-        const closedClients = clients.filter(client => client.stage === 'fechada');
-        const totalSales = closedClients.length;
+        const closedBusinesses = businesses.filter(business => 
+          closedStage ? business.stage === closedStage.id : business.stage === 'fechada'
+        );
+        const totalSales = closedBusinesses.length;
 
-        const salesThisMonth = closedClients.filter(client => {
-          const updatedAt = new Date(client.updatedAt);
+        const salesThisMonth = closedBusinesses.filter(business => {
+          const updatedAt = new Date(business.updatedAt);
           return updatedAt >= currentMonthStart && updatedAt <= currentMonthEnd;
         }).length;
 
-        const conversionRate = clients.length > 0 ? (totalSales / clients.length) * 100 : 0;
+        const conversionRate = businesses.length > 0 ? (totalSales / businesses.length) * 100 : 0;
 
         // Calculate average ticket
-        const averageTicket = services.length > 0 
-          ? services.reduce((sum, service) => {
-              const avgServicePrice = service.plans.reduce((planSum, plan) => planSum + plan.price, 0) / service.plans.length;
-              return sum + avgServicePrice;
-            }, 0) / services.length
+        const averageTicket = closedBusinesses.length > 0
+          ? closedBusinesses.reduce((sum, business) => sum + business.valor, 0) / closedBusinesses.length
           : 0;
 
         // Calculate pipeline value
-        const pipelineValue = clients
-          .filter(client => client.stage !== 'fechada' && client.stage !== 'perdida')
-          .reduce((sum, client) => {
-            const service = services.find(s => s.id === client.serviceId);
-            const plan = service?.plans.find(p => p.id === client.planId);
-            return sum + (plan?.price || 0);
+        const lostStage = stages.find(stage => 
+          stage.name.toLowerCase().includes('perdida') || 
+          stage.name.toLowerCase().includes('lost')
+        );
+        
+        const pipelineValue = businesses
+          .filter(business => {
+            if (closedStage && business.stage === closedStage.id) return false;
+            if (lostStage && business.stage === lostStage.id) return false;
+            return true;
+          })
+          .reduce((sum, business) => {
+            return sum + business.valor;
           }, 0);
 
-        // Clients by stage
-        const clientsByStage = clients.reduce((acc, client) => {
-          acc[client.stage] = (acc[client.stage] || 0) + 1;
+        // Businesses by stage
+        const businessesByStage = businesses.reduce((acc, business) => {
+          const stage = stages.find(s => s.id === business.stage);
+          const stageName = stage ? stage.name : 'Desconhecido';
+          acc[stageName] = (acc[stageName] || 0) + 1;
           return acc;
         }, {} as Record<string, number>);
 
         // Sales by service
-        const salesByService = closedClients.reduce((acc, client) => {
-          const service = services.find(s => s.id === client.serviceId);
+        const salesByService = closedBusinesses.reduce((acc, business) => {
+          const service = services.find(s => s.id === business.serviceId);
           if (service) {
             acc[service.name] = (acc[service.name] || 0) + 1;
           }
@@ -128,27 +149,29 @@ const Dashboard = () => {
           })) as UserType[];
 
           topPerformers = users.map(user => {
-            const userClients = clients.filter(client => client.assignedTo === user.uid);
-            const userSales = userClients.filter(client => client.stage === 'fechada').length;
+            const userBusinesses = businesses.filter(business => business.assignedTo === user.uid);
+            const userSales = userBusinesses.filter(business => 
+              closedStage ? business.stage === closedStage.id : business.stage === 'fechada'
+            ).length;
             
             return {
               userId: user.uid,
               userName: user.name,
               sales: userSales,
-              clients: userClients.length
+              clients: userBusinesses.length
             };
           }).sort((a, b) => b.sales - a.sales).slice(0, 5);
         }
 
         const dashboardMetrics: DashboardMetrics = {
-          totalClients: clients.length,
-          newClientsThisMonth,
+          totalClients: businesses.length,
+          newClientsThisMonth: newBusinessesThisMonth,
           totalSales,
           salesThisMonth,
           conversionRate,
           averageTicket,
           pipelineValue,
-          clientsByStage,
+          clientsByStage: businessesByStage,
           salesByService,
           topPerformers
         };
@@ -212,7 +235,7 @@ const Dashboard = () => {
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <MetricCard
-            title="Total de Clientes"
+            title="Total de Negócios"
             value={metrics.totalClients}
             icon={Users}
             color="blue"
@@ -260,7 +283,7 @@ const Dashboard = () => {
           <div className="bg-gray-800 rounded-lg p-6">
             <div className="flex items-center gap-3 mb-4">
               <PieChart className="text-purple-400" size={24} />
-              <h2 className="text-xl font-bold text-white">Clientes por Estágio</h2>
+              <h2 className="text-xl font-bold text-white">Negócios por Estágio</h2>
             </div>
             <div className="space-y-3">
               {Object.entries(metrics.clientsByStage).map(([stage, count]) => (
