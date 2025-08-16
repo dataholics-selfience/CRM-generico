@@ -77,10 +77,9 @@ const Login = () => {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         const userData = userDoc.exists() ? userDoc.data() : null;
         
-        // Use Firestore emailVerified field if available, otherwise fall back to Firebase Auth
-        const isEmailVerified = userData?.emailVerified !== undefined 
-          ? userData.emailVerified 
-          : user.emailVerified;
+        // Vendedores criados por admin não precisam verificar email
+        // Apenas usuários que se registraram sozinhos precisam verificar
+        const isEmailVerified = userData?.emailVerified === true || user.emailVerified;
         
         if (!isEmailVerified) {
           await auth.signOut();

@@ -108,23 +108,22 @@ const SalesmanRegistration = () => {
       const userData = {
         uid: newUser.uid,
         name: formData.name.trim(),
+        cpf: '', // Campo obrigatório mas vazio para vendedores
+        company: 'DATAHOLICS', // Empresa padrão
         email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim(),
         linkedin: formData.linkedin.trim(),
         description: formData.description.trim(),
         serviceIds: formData.serviceIds,
         role: 'vendedor',
-        emailVerified: false,
+        emailVerified: true, // Vendedores não precisam verificar email
         createdAt: new Date().toISOString(),
         createdBy: auth.currentUser.uid
       };
 
       await setDoc(doc(db, 'users', newUser.uid), userData);
 
-      // Send email verification
-      await sendEmailVerification(newUser);
-
-      setSuccess(`Vendedor cadastrado com sucesso! Um email de verificação foi enviado para ${formData.email}`);
+      setSuccess(`Vendedor cadastrado com sucesso! O vendedor pode fazer login diretamente com email: ${formData.email} e senha: ${formData.password}`);
       
       // Reset form
       setFormData({

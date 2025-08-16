@@ -186,7 +186,7 @@ const ServiceManagement = () => {
       </div>
 
       <div className="p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {services.map((service) => (
             <ServiceCard
               key={service.id}
@@ -229,69 +229,89 @@ const ServiceCard = ({
   onToggleStatus: (id: string, currentStatus: boolean) => void;
 }) => {
   return (
-    <div className="bg-gray-800 rounded-lg p-6">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <h3 className="text-lg font-bold text-white">{service.name}</h3>
-            {service.active ? (
-              <CheckCircle size={16} className="text-green-400" />
-            ) : (
-              <XCircle size={16} className="text-red-400" />
-            )}
+    <div className="bg-gray-800 rounded-lg p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Informações do Serviço - 2/3 da largura */}
+      <div className="lg:col-span-2 space-y-4">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-lg font-bold text-white">{service.name}</h3>
+              {service.active ? (
+                <CheckCircle size={16} className="text-green-400" />
+              ) : (
+                <XCircle size={16} className="text-red-400" />
+              )}
+            </div>
+            <p className="text-gray-400 text-sm">{service.description}</p>
           </div>
-          <p className="text-gray-400 text-sm">{service.description}</p>
         </div>
-        
-        <div className="flex gap-2">
-          <button
-            onClick={() => onEdit(service)}
-            className="text-blue-400 hover:text-blue-300"
-          >
-            <Edit size={16} />
-          </button>
-          <button
-            onClick={() => onDelete(service.id)}
-            className="text-red-400 hover:text-red-300"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
-      </div>
 
-      <div className="space-y-3">
-        <h4 className="text-sm font-medium text-gray-300">Planos:</h4>
-        {service.plans.map((plan) => (
-          <div key={plan.id} className="bg-gray-700 rounded p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-white">{plan.name}</span>
-              <div className="flex items-center gap-2">
-                <DollarSign size={14} className="text-green-400" />
-                <span className="text-green-400 font-bold">
-                  R$ {plan.price.toLocaleString()}
-                </span>
-                <Clock size={14} className="text-gray-400" />
-                <span className="text-gray-400 text-sm">{plan.duration}</span>
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium text-gray-300">Planos:</h4>
+          {service.plans.map((plan) => (
+            <div key={plan.id} className="bg-gray-700 rounded p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-white">{plan.name}</span>
+                <div className="flex items-center gap-2">
+                  <DollarSign size={14} className="text-green-400" />
+                  <span className="text-green-400 font-bold">
+                    R$ {plan.price.toLocaleString()}
+                  </span>
+                  <Clock size={14} className="text-gray-400" />
+                  <span className="text-gray-400 text-sm">{plan.duration}</span>
+                </div>
+              </div>
+              <div className="text-xs text-gray-400">
+                {plan.features.join(' • ')}
               </div>
             </div>
-            <div className="text-xs text-gray-400">
-              {plan.features.join(' • ')}
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => onToggleStatus(service.id, service.active)}
+            className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${
+              service.active
+                ? 'bg-red-600 hover:bg-red-700 text-white'
+                : 'bg-green-600 hover:bg-green-700 text-white'
+            }`}
+          >
+            {service.active ? 'Desativar' : 'Ativar'}
+          </button>
+        </div>
       </div>
 
-      <div className="flex gap-2 mt-4">
-        <button
-          onClick={() => onToggleStatus(service.id, service.active)}
-          className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${
-            service.active
-              ? 'bg-red-600 hover:bg-red-700 text-white'
-              : 'bg-green-600 hover:bg-green-700 text-white'
-          }`}
-        >
-          {service.active ? 'Desativar' : 'Ativar'}
-        </button>
+      {/* Timeline/Ações - 1/3 da largura */}
+      <div className="space-y-4">
+        <h4 className="text-sm font-medium text-gray-300">Ações:</h4>
+        
+        <div className="space-y-2">
+          <button
+            onClick={() => onEdit(service)}
+            className="w-full flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+          >
+            <Edit size={16} />
+            Editar Serviço
+          </button>
+          
+          <button
+            onClick={() => onDelete(service.id)}
+            className="w-full flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+          >
+            <Trash2 size={16} />
+            Excluir Serviço
+          </button>
+        </div>
+
+        <div className="pt-4 border-t border-gray-700">
+          <h5 className="text-xs font-medium text-gray-400 mb-2">Informações:</h5>
+          <div className="space-y-1 text-xs text-gray-500">
+            <p>Criado em: {format(new Date(service.createdAt), 'dd/MM/yyyy', { locale: ptBR })}</p>
+            <p>Status: {service.active ? 'Ativo' : 'Inativo'}</p>
+            <p>Planos: {service.plans.length}</p>
+          </div>
+        </div>
       </div>
     </div>
   );
