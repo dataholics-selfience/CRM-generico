@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Mail, Phone, Linkedin, Building2, MapPin, 
   User, Briefcase, DollarSign, Calendar, MessageSquare,
-  Plus, Edit, Save, X, Trash2, Clock, FileText
+  Plus, Edit, Save, X, Trash2, Clock, FileText, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { 
   doc, getDoc, updateDoc, addDoc, collection, 
@@ -247,6 +247,24 @@ const BusinessDetail = () => {
     }
   };
 
+  const handleStageNavigation = (direction: 'prev' | 'next') => {
+    const currentIndex = stages.findIndex(s => s.id === business?.stage);
+    if (currentIndex === -1) return;
+
+    let newIndex;
+    if (direction === 'prev' && currentIndex > 0) {
+      newIndex = currentIndex - 1;
+    } else if (direction === 'next' && currentIndex < stages.length - 1) {
+      newIndex = currentIndex + 1;
+    } else {
+      return;
+    }
+
+    const newStage = stages[newIndex];
+    if (newStage) {
+      handleStageChange(newStage.id);
+    }
+  };
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -274,6 +292,7 @@ const BusinessDetail = () => {
   const service = services.find(s => s.id === business.serviceId);
   const plan = service?.plans.find(p => p.id === business.planId);
   const currentStage = stages.find(s => s.id === business.stage);
+  const currentStageIndex = stages.findIndex(s => s.id === business.stage);
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-black' : 'bg-white'}`}>
@@ -288,6 +307,39 @@ const BusinessDetail = () => {
           <h1 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
             {company?.nome || 'Empresa'} - {business.nome}
           </h1>
+          
+          {/* Stage Navigation */}
+          {currentStage && (
+            <div className="flex items-center gap-2 ml-6">
+              <button
+                onClick={() => handleStageNavigation('prev')}
+                disabled={currentStageIndex === 0}
+                className={`p-1 rounded transition-colors ${
+                  currentStageIndex === 0
+                    ? 'text-gray-600 cursor-not-allowed'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <ChevronLeft size={20} />
+              </button>
+              
+              <div className={`px-3 py-1 rounded-full border text-sm font-medium ${currentStage.color}`}>
+                {currentStage.name}
+              </div>
+              
+              <button
+                onClick={() => handleStageNavigation('next')}
+                disabled={currentStageIndex === stages.length - 1}
+                className={`p-1 rounded transition-colors ${
+                  currentStageIndex === stages.length - 1
+                    ? 'text-gray-600 cursor-not-allowed'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          )}
         </div>
         
         <div className="flex items-center gap-3">
@@ -324,26 +376,9 @@ const BusinessDetail = () => {
       </div>
 
       <div className="p-6">
-        <div className="space-y-6">
-          {/* Stage Selector at the top */}
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h3 className="text-lg font-bold text-white mb-4">Estágio Atual</h3>
-            <select
-              value={business.stage}
-              onChange={(e) => handleStageChange(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {stages.map((stage) => (
-                <option key={stage.id} value={stage.id}>
-                  {stage.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex gap-6">
+        <div className="flex gap-6 h-[calc(100vh-120px)]">
           {/* Business and Company Information */}
-          <div className="flex-1 space-y-6">
+          <div className="flex-1 space-y-6 overflow-y-auto">
             {/* Business Details */}
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-bold text-white mb-4">Detalhes do Negócio</h2>
@@ -710,9 +745,9 @@ const BusinessDetail = () => {
           </div>
 
           {/* Timeline Sidebar */}
-          <div className="w-96 space-y-6">
+          <div className="w-[60%] flex flex-col h-full">
             {/* Timeline */}
-            <div className="bg-gray-800 rounded-lg p-6">
+            <div className="bg-gray-800 rounded-lg p-6 flex-1 flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-white">Timeline</h3>
                 <button
@@ -724,7 +759,7 @@ const BusinessDetail = () => {
                 </button>
               </div>
 
-              <div className="space-y-4 max-h-96 overflow-y-auto">
+              <div className="space-y-4 flex-1 overflow-y-auto">
                 {interactions.length === 0 ? (
                   <p className="text-gray-400 text-center py-8">Nenhuma interação registrada</p>
                 ) : (
@@ -734,7 +769,6 @@ const BusinessDetail = () => {
                 )}
               </div>
             </div>
-          </div>
           </div>
         </div>
       </div>
