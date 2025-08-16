@@ -324,9 +324,9 @@ const BusinessDetail = () => {
       </div>
 
       <div className="p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="flex gap-6">
           {/* Business and Company Information */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="flex-1 space-y-6">
             {/* Business Details */}
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-bold text-white mb-4">Detalhes do Negócio</h2>
@@ -663,8 +663,8 @@ const BusinessDetail = () => {
             )}
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
+          {/* Timeline Sidebar - 60% width */}
+          <div className="w-[60%] space-y-6">
             {/* Stage */}
             <div className="bg-gray-800 rounded-lg p-6">
               <h3 className="text-lg font-bold text-white mb-4">Estágio Atual</h3>
