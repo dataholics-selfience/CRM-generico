@@ -648,7 +648,7 @@ const BusinessDetail = () => {
                   <div key={contact.id} className="mb-6 last:mb-0 pb-6 last:pb-0 border-b border-gray-700 last:border-b-0">
                     <h3 className="text-lg font-medium text-white mb-3">Contato {index + 1}</h3>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">Nome</label>
                         {isEditing ? (
@@ -721,6 +721,37 @@ const BusinessDetail = () => {
                       </div>
 
                       <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">LinkedIn</label>
+                        {isEditing ? (
+                          <input
+                            type="url"
+                            value={editData.contacts?.[index]?.linkedin || ''}
+                            onChange={(e) => {
+                              const newContacts = [...(editData.contacts || contacts)];
+                              newContacts[index] = { ...newContacts[index], linkedin: e.target.value };
+                              setEditData(prev => ({ ...prev, contacts: newContacts }));
+                            }}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="https://linkedin.com/in/perfil"
+                          />
+                        ) : (
+                          contact.linkedin && (
+                            <div className="flex items-center gap-2">
+                              <Linkedin size={16} className="text-blue-400" />
+                              <a 
+                                href={contact.linkedin}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300"
+                              >
+                                LinkedIn
+                              </a>
+                            </div>
+                          )
+                        )}
+                      </div>
+
+                      <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">Cargo</label>
                         {isEditing ? (
                           <input
@@ -738,6 +769,50 @@ const BusinessDetail = () => {
                         )}
                       </div>
                     </div>
+
+                    {/* Botões para adicionar/remover contatos durante edição */}
+                    {isEditing && (
+                      <div className="flex gap-2 mt-4 pt-4 border-t border-gray-600">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newContacts = [...(editData.contacts || contacts)];
+                            newContacts.push({
+                              id: `temp_${Date.now()}`,
+                              nome: '',
+                              email: '',
+                              whatsapp: '',
+                              linkedin: '',
+                              cargoAlvo: '',
+                              companyId: company?.id || '',
+                              createdBy: auth.currentUser?.uid || '',
+                              createdAt: new Date().toISOString(),
+                              updatedAt: new Date().toISOString()
+                            });
+                            setEditData(prev => ({ ...prev, contacts: newContacts }));
+                          }}
+                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+                        >
+                          <Plus size={16} />
+                          Adicionar Contato
+                        </button>
+                        
+                        {(editData.contacts || contacts).length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newContacts = [...(editData.contacts || contacts)];
+                              newContacts.splice(index, 1);
+                              setEditData(prev => ({ ...prev, contacts: newContacts }));
+                            }}
+                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+                          >
+                            <Trash2 size={16} />
+                            Remover Contato
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -745,7 +820,7 @@ const BusinessDetail = () => {
           </div>
 
           {/* Timeline Sidebar */}
-          <div className="w-[60%] flex flex-col h-full">
+          <div className="w-1/2 flex flex-col h-full">
             {/* Timeline */}
             <div className="bg-gray-800 rounded-lg p-6 flex-1 flex flex-col">
               <div className="flex items-center justify-between mb-4">

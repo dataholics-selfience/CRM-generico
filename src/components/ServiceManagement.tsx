@@ -230,7 +230,7 @@ const ServiceCard = ({
 }) => {
   return (
     <div className="bg-gray-800 rounded-lg p-6 flex gap-6 h-[400px]">
-      {/* Informações do Serviço - 2/3 da largura */}
+      {/* Informações do Serviço - 50% da largura */}
       <div className="w-1/2 space-y-4 overflow-y-auto pr-4 custom-scrollbar">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -282,7 +282,7 @@ const ServiceCard = ({
         </div>
       </div>
 
-      {/* Timeline/Ações - 1/3 da largura */}
+      {/* Timeline/Ações - 50% da largura */}
       <div className="w-1/2 space-y-4 overflow-y-auto pl-4 border-l border-gray-700 custom-scrollbar">
         <h4 className="text-sm font-medium text-gray-300">Ações:</h4>
         
