@@ -207,13 +207,9 @@ const Login = () => {
             >
               Esqueceu a senha?
             </Link>
-            <Link 
-              to="/register" 
-              className="text-lg text-blue-400 hover:text-blue-500 font-medium uppercase"
-              tabIndex={isLoading ? -1 : 0}
-            >
-              CRIAR CONTA
-            </Link>
+            <p className="text-gray-400 text-sm">
+              Apenas administradores podem criar contas no sistema
+            </p>
           </div>
         </form>
       </div>

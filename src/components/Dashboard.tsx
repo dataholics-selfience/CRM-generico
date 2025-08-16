@@ -5,7 +5,7 @@ import {
   BarChart3, PieChart, Calendar, Award
 } from 'lucide-react';
 import { 
-  collection, query, where, getDocs, onSnapshot 
+  collection, query, where, getDocs, onSnapshot, getDoc, doc
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { ClientType, InteractionType, ServiceType, UserType, DashboardMetrics } from '../types';

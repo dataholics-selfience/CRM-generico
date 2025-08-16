@@ -64,7 +64,6 @@ const BusinessCard = ({
           <GripVertical size={16} className="text-gray-400 group-hover:text-gray-300" />
           <div className="flex-1">
             <h3 className="text-white font-medium text-sm">{company?.nome || 'Empresa não encontrada'}</h3>
-            <p className="text-gray-400 text-xs">{business.nome}</p>
             <p className="text-green-400 text-xs font-medium">R$ {business.valor.toLocaleString()}</p>
           </div>
         </div>
@@ -81,67 +80,16 @@ const BusinessCard = ({
         </button>
       </div>
 
-      <div className="space-y-2 text-xs">
-        {company && (
-          <>
-            <div className="flex items-center gap-2 text-gray-300">
-              <Building2 size={12} className="text-blue-400" />
-              <span className="truncate">{company.segmento}</span>
+      {service && (
+        <div className="bg-gray-800 rounded p-2">
+          <div className="text-blue-400 font-medium text-xs">{service.name}</div>
+          {plan && (
+            <div className="text-gray-400 text-xs">
+              {plan.name} - R$ {plan.price.toLocaleString()}
             </div>
-            <div className="flex items-center gap-2 text-gray-300">
-              <MapPin size={12} className="text-green-400" />
-              <span className="truncate">{company.regiao}</span>
-            </div>
-          </>
-        )}
-        {service && (
-          <div className="bg-gray-800 rounded p-2 mt-2">
-            <div className="text-blue-400 font-medium">{service.name}</div>
-            {plan && (
-              <div className="text-gray-400 text-xs">
-                {plan.name} - R$ {plan.price.toLocaleString()}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="flex gap-2 mt-3">
-        {contacts.length > 0 && contacts[0].email && (
-          <a
-            href={`mailto:${contacts[0].email}`}
-            onClick={(e) => e.stopPropagation()}
-            className="text-blue-400 hover:text-blue-300"
-          >
-            <Mail size={12} />
-          </a>
-        )}
-        {contacts.length > 0 && contacts[0].whatsapp && (
-          <a
-            href={`https://wa.me/${contacts[0].whatsapp.replace(/\D/g, '')}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-green-400 hover:text-green-300"
-          >
-            <Phone size={12} />
-          </a>
-        )}
-        {contacts.length > 0 && contacts[0].linkedin && (
-          <a
-            href={contacts[0].linkedin}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-blue-400 hover:text-blue-300"
-          >
-            <Linkedin size={12} />
-          </a>
-        )}
-        {contacts.length > 1 && (
-          <span className="text-gray-400 text-xs">+{contacts.length - 1}</span>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -394,7 +342,7 @@ const Pipeline = () => {
   };
 
   const handleBusinessClick = (businessId: string) => {
-    navigate(`/business/${businessId}`);
+    navigate(`/negocio/${businessId}`);
   };
 
   const handleRemoveBusiness = (removedId: string) => {
@@ -442,6 +390,16 @@ const Pipeline = () => {
           </div>
           
           <div className="flex items-center gap-3">
+            {userData?.role === 'admin' && (
+              <button
+                onClick={() => navigate('/cadastro-vendedor')}
+                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                <UserPlus size={18} />
+                Cadastro Vendedor
+              </button>
+            )}
+            
             <button
               onClick={() => setShowAddClient(true)}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
