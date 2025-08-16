@@ -232,12 +232,14 @@ const BusinessDetail = () => {
         userName: userData?.name || 'Unknown',
         type: 'stage_change',
         title: 'Mudança de Estágio',
-        description: `Negócio movido de "${oldStage?.name}" para "${newStageObj?.name}"`,
+        description: `Negócio movido de "${oldStage?.name || 'Desconhecido'}" para "${newStageObj?.name || 'Desconhecido'}"`,
         date: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         metadata: {
-          previousValue: oldStage?.name,
-          newValue: newStageObj?.name
+          previousValue: oldStage?.name || 'Desconhecido',
+          newValue: newStageObj?.name || 'Desconhecido',
+          previousStage: business.stage,
+          newStage: newStage
         }
       });
 

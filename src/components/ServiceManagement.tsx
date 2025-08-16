@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Plus, Edit, Trash2, Save, X, Settings,
-  DollarSign, Clock, CheckCircle, XCircle
+  DollarSign, Clock, CheckCircle, XCircle, Users
 } from 'lucide-react';
 import { 
   collection, query, onSnapshot, addDoc, updateDoc, 
@@ -10,6 +10,8 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { ServiceType, ServicePlan } from '../types';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { useTheme } from '../contexts/ThemeContext';
 
 const ServiceManagement = () => {
@@ -19,6 +21,8 @@ const ServiceManagement = () => {
   const [showAddService, setShowAddService] = useState(false);
   const [editingService, setEditingService] = useState<ServiceType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [selectedServiceForContact, setSelectedServiceForContact] = useState<ServiceType | null>(null);
 
   useEffect(() => {
     const servicesQuery = query(collection(db, 'services'));
@@ -153,6 +157,11 @@ const ServiceManagement = () => {
     });
   };
 
+  const handleManageContacts = (service: ServiceType) => {
+    setSelectedServiceForContact(service);
+    setShowContactModal(true);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -194,6 +203,7 @@ const ServiceManagement = () => {
               onEdit={setEditingService}
               onDelete={handleDeleteService}
               onToggleStatus={toggleServiceStatus}
+              onManageContacts={handleManageContacts}
             />
           ))}
         </div>
@@ -213,6 +223,13 @@ const ServiceManagement = () => {
           onSave={() => setEditingService(null)}
         />
       )}
+
+      {showContactModal && selectedServiceForContact && (
+        <ContactManagementModal
+          service={selectedServiceForContact}
+          onClose={() => { setShowContactModal(false); setSelectedServiceForContact(null); }}
+        />
+      )}
     </div>
   );
 };
@@ -221,12 +238,14 @@ const ServiceCard = ({
   service, 
   onEdit, 
   onDelete, 
-  onToggleStatus 
+  onToggleStatus,
+  onManageContacts
 }: { 
   service: ServiceType;
   onEdit: (service: ServiceType) => void;
   onDelete: (id: string) => void;
   onToggleStatus: (id: string, currentStatus: boolean) => void;
+  onManageContacts: (service: ServiceType) => void;
 }) => {
   return (
     <div className="bg-gray-800 rounded-lg p-6 flex gap-6 h-[400px]">
@@ -293,6 +312,14 @@ const ServiceCard = ({
           >
             <Edit size={16} />
             Editar Serviço
+          </button>
+          
+          <button
+            onClick={() => onManageContacts(service)}
+            className="w-full flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+          >
+            <Users size={16} />
+            Gerenciar Contatos
           </button>
           
           <button
@@ -633,6 +660,301 @@ const ServiceModal = ({
                   {service ? 'Atualizar' : 'Criar'} Serviço
                 </>
               )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const ContactManagementModal = ({ 
+  service, 
+  onClose 
+}: { 
+  service: ServiceType;
+  onClose: () => void;
+}) => {
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [editingContact, setEditingContact] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchContacts = async () => {
+      try {
+        const contactsQuery = query(
+          collection(db, 'serviceContacts'),
+          where('serviceId', '==', service.id)
+        );
+        
+        const unsubscribe = onSnapshot(contactsQuery, (snapshot) => {
+          const contactsData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          
+          contactsData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          setContacts(contactsData);
+          setLoading(false);
+        });
+
+        return () => unsubscribe();
+      } catch (error) {
+        console.error('Error fetching contacts:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchContacts();
+  }, [service.id]);
+
+  const handleDeleteContact = async (contactId: string) => {
+    if (confirm('Tem certeza que deseja excluir este contato?')) {
+      await deleteDoc(doc(db, 'serviceContacts', contactId));
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gray-700">
+          <h2 className="text-xl font-bold text-white">
+            Contatos - {service.name}
+          </h2>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowAddContact(true)}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              <Plus size={18} />
+              Novo Contato
+            </button>
+            <button onClick={onClose} className="text-gray-400 hover:text-white">
+              <X size={24} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="text-white">Carregando contatos...</div>
+            </div>
+          ) : contacts.length === 0 ? (
+            <div className="text-center py-8">
+              <Users size={48} className="text-gray-600 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-white mb-2">Nenhum contato cadastrado</h3>
+              <p className="text-gray-400 mb-4">Adicione contatos para este serviço</p>
+              <button
+                onClick={() => setShowAddContact(true)}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                Adicionar Primeiro Contato
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {contacts.map((contact) => (
+                <div key={contact.id} className="bg-gray-700 rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="text-white font-medium">{contact.name}</h3>
+                      <p className="text-gray-400 text-sm">{contact.email}</p>
+                      {contact.phone && (
+                        <p className="text-gray-400 text-sm">{contact.phone}</p>
+                      )}
+                      {contact.company && (
+                        <p className="text-gray-400 text-sm">{contact.company}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setEditingContact(contact)}
+                        className="text-blue-400 hover:text-blue-300 p-1"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteContact(contact.id)}
+                        className="text-red-400 hover:text-red-300 p-1"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Criado em {format(new Date(contact.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showAddContact && (
+        <ContactModal
+          serviceId={service.id}
+          onClose={() => setShowAddContact(false)}
+          onSave={() => setShowAddContact(false)}
+        />
+      )}
+
+      {editingContact && (
+        <ContactModal
+          serviceId={service.id}
+          contact={editingContact}
+          onClose={() => setEditingContact(null)}
+          onSave={() => setEditingContact(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+const ContactModal = ({ 
+  serviceId,
+  contact,
+  onClose, 
+  onSave 
+}: { 
+  serviceId: string;
+  contact?: any;
+  onClose: () => void;
+  onSave: () => void;
+}) => {
+  const [formData, setFormData] = useState({
+    name: contact?.name || '',
+    email: contact?.email || '',
+    phone: contact?.phone || '',
+    company: contact?.company || '',
+    notes: contact?.notes || ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auth.currentUser) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const contactData = {
+        ...formData,
+        serviceId,
+        createdBy: auth.currentUser.uid,
+        ...(contact ? { updatedAt: new Date().toISOString() } : { createdAt: new Date().toISOString() })
+      };
+
+      if (contact) {
+        await updateDoc(doc(db, 'serviceContacts', contact.id), contactData);
+      } else {
+        await addDoc(collection(db, 'serviceContacts'), contactData);
+      }
+
+      onSave();
+    } catch (error) {
+      console.error('Error saving contact:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4">
+      <div className="bg-gray-800 rounded-lg max-w-md w-full">
+        <div className="flex items-center justify-between p-6 border-b border-gray-700">
+          <h2 className="text-xl font-bold text-white">
+            {contact ? 'Editar Contato' : 'Novo Contato'}
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            <X size={24} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Nome *
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              required
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Nome do contato"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Email *
+            </label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              required
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="email@exemplo.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Telefone
+            </label>
+            <input
+              type="text"
+              value={formData.phone}
+              onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="(11) 99999-9999"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Empresa
+            </label>
+            <input
+              type="text"
+              value={formData.company}
+              onChange={(e) => setFormData(prev => ({ ...prev, company: e.target.value }))}
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Nome da empresa"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Observações
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              rows={3}
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              placeholder="Observações sobre o contato..."
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2 px-4 bg-gray-600 hover:bg-gray-700 rounded-md text-white font-medium transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md text-white font-medium transition-colors"
+            >
+              {isSubmitting ? 'Salvando...' : contact ? 'Atualizar' : 'Criar'}
             </button>
           </div>
         </form>

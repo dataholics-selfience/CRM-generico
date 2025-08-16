@@ -225,6 +225,11 @@ export interface DashboardMetrics {
   averageTicket: number;
   pipelineValue: number;
   clientsByStage: Record<string, number>;
+  salesStatus: {
+    won: number;
+    lost: number;
+    inProgress: number;
+  };
   salesByService: Record<string, number>;
   topPerformers: Array<{
     userId: string;

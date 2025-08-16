@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Users, DollarSign, TrendingUp, Target,
-  BarChart3, PieChart, Calendar, Award
+  BarChart3, PieChart, Calendar, Award, CheckCircle, XCircle, Clock
 } from 'lucide-react';
 import { 
   collection, query, where, getDocs, onSnapshot, getDoc, doc
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { ClientType, InteractionType, ServiceType, UserType, DashboardMetrics } from '../types';
+import { ClientType, InteractionType, ServiceType, UserType, DashboardMetrics, BusinessType, PipelineStageType } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -74,11 +74,17 @@ const Dashboard = () => {
         })) as PipelineStageType[];
         
         const closedStage = stages.find(stage => 
-          stage.name.toLowerCase().includes('fechada') || 
+          stage.name.toLowerCase().includes('fechada') ||
           stage.name.toLowerCase().includes('fechado') ||
           stage.name.toLowerCase().includes('won') ||
           stage.name.toLowerCase().includes('closed')
         );
+        
+        const lostStage = stages.find(stage => 
+          stage.name.toLowerCase().includes('perdida') || 
+          stage.name.toLowerCase().includes('lost')
+        );
+        
         // Calculate metrics
         const now = new Date();
         const currentMonthStart = startOfMonth(now);
@@ -90,7 +96,7 @@ const Dashboard = () => {
         }).length;
 
         const closedBusinesses = businesses.filter(business => 
-          closedStage ? business.stage === closedStage.id : business.stage === 'fechada'
+          closedStage ? business.stage === closedStage.id : false
         );
         const totalSales = closedBusinesses.length;
 
@@ -106,21 +112,29 @@ const Dashboard = () => {
           ? closedBusinesses.reduce((sum, business) => sum + business.valor, 0) / closedBusinesses.length
           : 0;
 
-        // Calculate pipeline value
-        const lostStage = stages.find(stage => 
-          stage.name.toLowerCase().includes('perdida') || 
-          stage.name.toLowerCase().includes('lost')
-        );
-        
+        // Calculate pipeline value (excluding closed and lost)
         const pipelineValue = businesses
           .filter(business => {
-            if (closedStage && business.stage === closedStage.id) return false;
             if (lostStage && business.stage === lostStage.id) return false;
+            if (closedStage && business.stage === closedStage.id) return false;
             return true;
           })
           .reduce((sum, business) => {
             return sum + business.valor;
           }, 0);
+
+        // Sales status breakdown
+        const salesStatus = {
+          won: closedBusinesses.length,
+          lost: businesses.filter(business => 
+            lostStage ? business.stage === lostStage.id : false
+          ).length,
+          inProgress: businesses.filter(business => {
+            if (closedStage && business.stage === closedStage.id) return false;
+            if (lostStage && business.stage === lostStage.id) return false;
+            return true;
+          }).length
+        };
 
         // Businesses by stage
         const businessesByStage = businesses.reduce((acc, business) => {
@@ -172,6 +186,7 @@ const Dashboard = () => {
           averageTicket,
           pipelineValue,
           clientsByStage: businessesByStage,
+          salesStatus,
           salesByService,
           topPerformers
         };
@@ -278,6 +293,9 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Sales Status Chart */}
+        <SalesStatusChart salesStatus={metrics.salesStatus} />
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Clients by Stage */}
           <div className="bg-gray-800 rounded-lg p-6">
@@ -345,6 +363,123 @@ const Dashboard = () => {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+};
+
+const SalesStatusChart = ({ salesStatus }: { salesStatus: { won: number; lost: number; inProgress: number } }) => {
+  const total = salesStatus.won + salesStatus.lost + salesStatus.inProgress;
+  
+  if (total === 0) {
+    return (
+      <div className="bg-gray-800 rounded-lg p-6 mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <PieChart className="text-blue-400" size={24} />
+          <h2 className="text-xl font-bold text-white">Status das Vendas</h2>
+        </div>
+        <div className="text-center py-8">
+          <p className="text-gray-400">Nenhum negócio encontrado</p>
+        </div>
+      </div>
+    );
+  }
+
+  const wonPercentage = (salesStatus.won / total) * 100;
+  const lostPercentage = (salesStatus.lost / total) * 100;
+  const inProgressPercentage = (salesStatus.inProgress / total) * 100;
+
+  return (
+    <div className="bg-gray-800 rounded-lg p-6 mb-8">
+      <div className="flex items-center gap-3 mb-6">
+        <PieChart className="text-blue-400" size={24} />
+        <h2 className="text-xl font-bold text-white">Status das Vendas</h2>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Chart Visual */}
+        <div className="flex items-center justify-center">
+          <div className="relative w-48 h-48">
+            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+              {/* Won slice */}
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                stroke="#10b981"
+                strokeWidth="20"
+                strokeDasharray={`${wonPercentage * 2.51} 251.2`}
+                strokeDashoffset="0"
+              />
+              {/* Lost slice */}
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                stroke="#ef4444"
+                strokeWidth="20"
+                strokeDasharray={`${lostPercentage * 2.51} 251.2`}
+                strokeDashoffset={`-${wonPercentage * 2.51}`}
+              />
+              {/* In Progress slice */}
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                fill="none"
+                stroke="#3b82f6"
+                strokeWidth="20"
+                strokeDasharray={`${inProgressPercentage * 2.51} 251.2`}
+                strokeDashoffset={`-${(wonPercentage + lostPercentage) * 2.51}`}
+              />
+            </svg>
+          </div>
+        </div>
+        
+        {/* Legend */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="text-green-400" size={20} />
+              <span className="text-gray-300">Vendas Fechadas</span>
+            </div>
+            <div className="text-right">
+              <div className="text-white font-bold">{salesStatus.won}</div>
+              <div className="text-green-400 text-sm">{wonPercentage.toFixed(1)}%</div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <XCircle className="text-red-400" size={20} />
+              <span className="text-gray-300">Vendas Perdidas</span>
+            </div>
+            <div className="text-right">
+              <div className="text-white font-bold">{salesStatus.lost}</div>
+              <div className="text-red-400 text-sm">{lostPercentage.toFixed(1)}%</div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Clock className="text-blue-400" size={20} />
+              <span className="text-gray-300">Em Andamento</span>
+            </div>
+            <div className="text-right">
+              <div className="text-white font-bold">{salesStatus.inProgress}</div>
+              <div className="text-blue-400 text-sm">{inProgressPercentage.toFixed(1)}%</div>
+            </div>
+          </div>
+          
+          <div className="pt-4 border-t border-gray-700">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-300 font-medium">Total de Negócios</span>
+              <span className="text-white font-bold text-lg">{total}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
