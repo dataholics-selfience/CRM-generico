@@ -47,6 +47,7 @@ const BusinessDetail = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showAddInteraction, setShowAddInteraction] = useState(false);
   const [editData, setEditData] = useState<any>({});
+  const [showAddContact, setShowAddContact] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -792,28 +793,12 @@ const BusinessDetail = () => {
                   </div>
                 ))}
                 
-                {/* Botão para adicionar novo contato - sempre visível */}
+                {/* Botão para adicionar novo contato */}
                 <div className="flex justify-center pt-4 border-t border-gray-700">
                   <button
                     type="button"
                     onClick={() => {
-                      const newContacts = [...(editData.contacts || contacts)];
-                      newContacts.push({
-                        id: `temp_${Date.now()}`,
-                        nome: '',
-                        email: '',
-                        whatsapp: '',
-                        linkedin: '',
-                        cargoAlvo: '',
-                        companyId: company?.id || '',
-                        createdBy: auth.currentUser?.uid || '',
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                      });
-                      setEditData(prev => ({ ...prev, contacts: newContacts }));
-                      if (!isEditing) {
-                        setIsEditing(true);
-                      }
+                      setShowAddContact(true);
                     }}
                     className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
                   >
@@ -860,6 +845,10 @@ const BusinessDetail = () => {
           onClose={() => setShowAddInteraction(false)}
           userData={userData}
         />
+      )}
+
+      {showAddContact && (
+        <AddContactModal businessId={id!} companyId={company?.id} onClose={() => setShowAddContact(false)} />
       )}
     </div>
   );
@@ -1025,6 +1014,185 @@ const AddInteractionModal = ({
               type="submit"
               disabled={isSubmitting}
               className="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md text-white font-medium transition-colors"
+            >
+              {isSubmitting ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const AddContactModal = ({ 
+  businessId, 
+  companyId,
+  onClose 
+}: { 
+  businessId: string;
+  companyId?: string;
+  onClose: () => void;
+}) => {
+  const [formData, setFormData] = useState({
+    nome: '',
+    email: '',
+    whatsapp: '',
+    linkedin: '',
+    cargoAlvo: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auth.currentUser || !companyId) return;
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      // Criar o novo contato
+      const contactRef = await addDoc(collection(db, 'contacts'), {
+        ...formData,
+        companyId,
+        createdBy: auth.currentUser.uid,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+
+      // Buscar o negócio atual para atualizar os contactIds
+      const businessDoc = await getDoc(doc(db, 'businesses', businessId));
+      if (businessDoc.exists()) {
+        const businessData = businessDoc.data();
+        const currentContactIds = businessData.contactIds || [];
+        
+        // Adicionar o novo contato aos contactIds do negócio
+        await updateDoc(doc(db, 'businesses', businessId), {
+          contactIds: [...currentContactIds, contactRef.id],
+          updatedAt: new Date().toISOString()
+        });
+      }
+
+      // Adicionar interação
+      await addDoc(collection(db, 'businessInteractions'), {
+        businessId,
+        userId: auth.currentUser.uid,
+        userName: 'Sistema',
+        type: 'note',
+        title: 'Novo Contato Adicionado',
+        description: `Contato ${formData.nome} foi adicionado ao negócio`,
+        date: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      });
+
+      onClose();
+      // Recarregar a página para mostrar o novo contato
+      window.location.reload();
+    } catch (error) {
+      console.error('Error adding contact:', error);
+      setError('Erro ao adicionar contato. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-800 rounded-lg max-w-md w-full">
+        <div className="flex items-center justify-between p-6 border-b border-gray-700">
+          <h2 className="text-xl font-bold text-white">Novo Contato</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            <X size={24} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="text-red-500 text-center bg-red-900/20 p-3 rounded-md border border-red-800">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Nome *
+            </label>
+            <input
+              type="text"
+              value={formData.nome}
+              onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+              required
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Nome completo"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Email *
+            </label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              required
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="email@empresa.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              WhatsApp
+            </label>
+            <input
+              type="text"
+              value={formData.whatsapp}
+              onChange={(e) => setFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="(11) 99999-9999"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              LinkedIn
+            </label>
+            <input
+              type="url"
+              value={formData.linkedin}
+              onChange={(e) => setFormData(prev => ({ ...prev, linkedin: e.target.value }))}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="https://linkedin.com/in/perfil"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Cargo *
+            </label>
+            <input
+              type="text"
+              value={formData.cargoAlvo}
+              onChange={(e) => setFormData(prev => ({ ...prev, cargoAlvo: e.target.value }))}
+              required
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Ex: CEO, CTO, Diretor de TI"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2 px-4 bg-gray-600 hover:bg-gray-700 rounded-md text-white font-medium transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md text-white font-medium transition-colors"
             >
               {isSubmitting ? 'Salvando...' : 'Salvar'}
             </button>

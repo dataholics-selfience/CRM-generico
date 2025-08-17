@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Plus, Users, Building2, MapPin, Mail, Phone, Linkedin,
+  Plus, Users, Building2, MapPin, Mail, Phone, Linkedin, ChevronDown,
   GripVertical, Trash2, Menu, BarChart3, Settings, UserPlus, Move, Edit
 } from 'lucide-react';
 import { collection, query, where, getDocs, deleteDoc, doc, updateDoc, addDoc, onSnapshot, getDoc, orderBy } from 'firebase/firestore';
@@ -210,6 +210,7 @@ const Pipeline = () => {
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
   const [showAddCompany, setShowAddCompany] = useState(false);
+  const [showNewDropdown, setShowNewDropdown] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -391,32 +392,6 @@ const Pipeline = () => {
           
           <div className="flex items-center gap-3">
             {userData?.role === 'admin' && (
-              <button
-                onClick={() => navigate('/cadastro-vendedor')}
-                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-              >
-                <UserPlus size={18} />
-                Cadastro Vendedor
-              </button>
-            )}
-            
-            <button
-              onClick={() => setShowAddClient(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              <UserPlus size={18} />
-              Novo Negócio
-            </button>
-            
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              <BarChart3 size={18} />
-              Dashboard
-            </button>
-            
-            {userData?.role === 'admin' && (
               <>
                 <button
                   onClick={() => navigate('/services')}
@@ -426,8 +401,78 @@ const Pipeline = () => {
                   Serviços
                 </button>
                 
+                <button
+                  onClick={() => navigate('/stages')}
+                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  <Edit size={18} />
+                  Etapas
+                </button>
               </>
             )}
+            
+            {/* Dropdown "Novo" */}
+            <div className="relative">
+              <button
+                onClick={() => setShowNewDropdown(!showNewDropdown)}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                <Plus size={18} />
+                Novo
+                <ChevronDown size={16} className={`transition-transform ${showNewDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showNewDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 z-50">
+                  <div className="py-2">
+                    <button
+                      onClick={() => {
+                        setShowAddClient(true);
+                        setShowNewDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-white hover:bg-gray-700 transition-colors flex items-center gap-2"
+                    >
+                      <Building2 size={16} />
+                      Negócio
+                    </button>
+                    
+                    {userData?.role === 'admin' && (
+                      <>
+                        <button
+                          onClick={() => {
+                            navigate('/services');
+                            setShowNewDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-white hover:bg-gray-700 transition-colors flex items-center gap-2"
+                        >
+                          <Settings size={16} />
+                          Serviço
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            navigate('/cadastro-vendedor');
+                            setShowNewDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-white hover:bg-gray-700 transition-colors flex items-center gap-2"
+                        >
+                          <UserPlus size={16} />
+                          Vendedor
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              <BarChart3 size={18} />
+              Dashboard
+            </button>
           </div>
         </div>
 
@@ -466,6 +511,14 @@ const Pipeline = () => {
           services={services}
           userData={userData}
           stages={stages}
+        />
+      )}
+      
+      {/* Fechar dropdown ao clicar fora */}
+      {showNewDropdown && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowNewDropdown(false)}
         />
       )}
     </div>
