@@ -393,21 +393,32 @@ const Pipeline = () => {
           <div className="flex items-center gap-3">
             {userData?.role === 'admin' && (
               <>
-                <button
-                  onClick={() => navigate('/services')}
-                  className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                >
-                  <Settings size={18} />
-                  Serviços
-                </button>
-                
-                <button
-                  onClick={() => navigate('/stages')}
-                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                >
-                  <Edit size={18} />
-                  Etapas
-                </button>
+                {/* Desktop buttons */}
+                <div className="hidden md:flex items-center gap-3">
+                  <button
+                    onClick={() => navigate('/services')}
+                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    <Settings size={18} />
+                    Serviços
+                  </button>
+                  
+                  <button
+                    onClick={() => navigate('/stages')}
+                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    <Edit size={18} />
+                    Etapas
+                  </button>
+                  
+                  <button
+                    onClick={() => navigate('/dashboard')}
+                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    <BarChart3 size={18} />
+                    Dashboard
+                  </button>
+                </div>
               </>
             )}
             
@@ -465,14 +476,6 @@ const Pipeline = () => {
                 </div>
               )}
             </div>
-            
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              <BarChart3 size={18} />
-              Dashboard
-            </button>
           </div>
         </div>
 

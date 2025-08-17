@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Save, Loader2, Plus, Trash2 } from 'lucide-react';
-import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, setDoc, query, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { ServiceType, UserType, PipelineStageType } from '../types';
 
@@ -15,6 +15,41 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [userServices, setUserServices] = useState<ServiceType[]>([]);
+
+  // Filter services based on user role and assigned services
+  useState(() => {
+    const filterServices = async () => {
+      if (!userData) return;
+      
+      if (userData.role === 'admin') {
+        // Admin sees all services
+        setUserServices(services);
+      } else {
+        // Vendedor sees only assigned services
+        try {
+          const userDoc = await getDocs(query(
+            collection(db, 'users'),
+            where('uid', '==', userData.uid)
+          ));
+          
+          if (!userDoc.empty) {
+            const userDataFromDb = userDoc.docs[0].data();
+            const assignedServiceIds = userDataFromDb.serviceIds || [];
+            const filteredServices = services.filter(service => 
+              assignedServiceIds.includes(service.id)
+            );
+            setUserServices(filteredServices);
+          }
+        } catch (error) {
+          console.error('Error fetching user services:', error);
+          setUserServices([]);
+        }
+      }
+    };
+
+    filterServices();
+  });
 
   // Company data
   const [companyData, setCompanyData] = useState({
@@ -125,7 +160,7 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
     }
   };
 
-  const selectedService = services.find(s => s.id === businessData.serviceId);
+  const selectedService = userServices.find(s => s.id === businessData.serviceId);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -434,7 +469,7 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Selecione o serviço</option>
-                    {services.map((service) => (
+                    {userServices.map((service) => (
                       <option key={service.id} value={service.id}>
                         {service.name}
                       </option>

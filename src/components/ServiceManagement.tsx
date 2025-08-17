@@ -21,8 +21,6 @@ const ServiceManagement = () => {
   const [showAddService, setShowAddService] = useState(false);
   const [editingService, setEditingService] = useState<ServiceType | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showContactModal, setShowContactModal] = useState(false);
-  const [selectedServiceForContact, setSelectedServiceForContact] = useState<ServiceType | null>(null);
 
   useEffect(() => {
     const servicesQuery = query(collection(db, 'services'));
@@ -157,11 +155,6 @@ const ServiceManagement = () => {
     });
   };
 
-  const handleManageContacts = (service: ServiceType) => {
-    setSelectedServiceForContact(service);
-    setShowContactModal(true);
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -203,7 +196,6 @@ const ServiceManagement = () => {
               onEdit={setEditingService}
               onDelete={handleDeleteService}
               onToggleStatus={toggleServiceStatus}
-              onManageContacts={handleManageContacts}
             />
           ))}
         </div>
@@ -223,13 +215,6 @@ const ServiceManagement = () => {
           onSave={() => setEditingService(null)}
         />
       )}
-
-      {showContactModal && selectedServiceForContact && (
-        <ContactManagementModal
-          service={selectedServiceForContact}
-          onClose={() => { setShowContactModal(false); setSelectedServiceForContact(null); }}
-        />
-      )}
     </div>
   );
 };
@@ -238,14 +223,12 @@ const ServiceCard = ({
   service, 
   onEdit, 
   onDelete, 
-  onToggleStatus,
-  onManageContacts
+  onToggleStatus
 }: { 
   service: ServiceType;
   onEdit: (service: ServiceType) => void;
   onDelete: (id: string) => void;
   onToggleStatus: (id: string, currentStatus: boolean) => void;
-  onManageContacts: (service: ServiceType) => void;
 }) => {
   return (
     <div className="bg-gray-800 rounded-lg p-6 flex gap-6 h-[400px]">
@@ -312,14 +295,6 @@ const ServiceCard = ({
           >
             <Edit size={16} />
             Editar Serviço
-          </button>
-          
-          <button
-            onClick={() => onManageContacts(service)}
-            className="w-full flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
-          >
-            <Users size={16} />
-            Gerenciar Contatos
           </button>
           
           <button

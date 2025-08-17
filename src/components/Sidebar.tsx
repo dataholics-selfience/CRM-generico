@@ -83,6 +83,14 @@ const Sidebar = ({ isOpen, toggleSidebar, userData }: SidebarProps) => {
                   <span>Gerenciar Serviços</span>
                 </Link>
 
+                <Link 
+                  to="/stages"
+                  className="w-full flex items-center gap-2 text-base font-medium bg-gradient-to-r from-orange-600 to-orange-800 hover:from-orange-700 hover:to-orange-900 text-white p-3 rounded-lg transition-all shadow-lg hover:shadow-xl"
+                >
+                  <Edit size={18} />
+                  <span>Gerenciar Etapas</span>
+                </Link>
+
                 <div className={`px-3 py-2 text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   Administração
                 </div>
