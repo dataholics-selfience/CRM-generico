@@ -772,51 +772,55 @@ const BusinessDetail = () => {
                       </div>
                     </div>
 
-                    {/* Botões para adicionar/remover contatos durante edição */}
-                    {isEditing && (
-                      <div className="flex gap-2 mt-4 pt-4 border-t border-gray-600">
+                    {/* Botões para remover contatos durante edição */}
+                    {isEditing && (editData.contacts || contacts).length > 1 && (
+                      <div className="flex justify-end mt-4 pt-4 border-t border-gray-600">
                         <button
                           type="button"
                           onClick={() => {
                             const newContacts = [...(editData.contacts || contacts)];
-                            newContacts.push({
-                              id: `temp_${Date.now()}`,
-                              nome: '',
-                              email: '',
-                              whatsapp: '',
-                              linkedin: '',
-                              cargoAlvo: '',
-                              companyId: company?.id || '',
-                              createdBy: auth.currentUser?.uid || '',
-                              createdAt: new Date().toISOString(),
-                              updatedAt: new Date().toISOString()
-                            });
+                            newContacts.splice(index, 1);
                             setEditData(prev => ({ ...prev, contacts: newContacts }));
                           }}
-                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+                          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
                         >
-                          <Plus size={16} />
-                          Adicionar Contato
+                          <Trash2 size={16} />
+                          Remover Contato
                         </button>
-                        
-                        {(editData.contacts || contacts).length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newContacts = [...(editData.contacts || contacts)];
-                              newContacts.splice(index, 1);
-                              setEditData(prev => ({ ...prev, contacts: newContacts }));
-                            }}
-                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
-                          >
-                            <Trash2 size={16} />
-                            Remover Contato
-                          </button>
-                        )}
                       </div>
                     )}
                   </div>
                 ))}
+                
+                {/* Botão para adicionar novo contato - sempre visível */}
+                <div className="flex justify-center pt-4 border-t border-gray-700">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newContacts = [...(editData.contacts || contacts)];
+                      newContacts.push({
+                        id: `temp_${Date.now()}`,
+                        nome: '',
+                        email: '',
+                        whatsapp: '',
+                        linkedin: '',
+                        cargoAlvo: '',
+                        companyId: company?.id || '',
+                        createdBy: auth.currentUser?.uid || '',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                      });
+                      setEditData(prev => ({ ...prev, contacts: newContacts }));
+                      if (!isEditing) {
+                        setIsEditing(true);
+                      }
+                    }}
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    <Plus size={16} />
+                    Novo Contato
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -922,7 +926,6 @@ const AddInteractionModal = ({
 }) => {
   const [formData, setFormData] = useState({
     type: 'note',
-    title: '',
     description: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -947,7 +950,7 @@ const AddInteractionModal = ({
         userId: auth.currentUser.uid,
         userName: userData.name,
         type: formData.type,
-        title: formData.title,
+        title: getDefaultTitle(formData.type),
         description: formData.description,
         date: new Date().toISOString(),
         createdAt: new Date().toISOString()
@@ -959,6 +962,17 @@ const AddInteractionModal = ({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const getDefaultTitle = (type: string) => {
+    const titles = {
+      note: 'Anotação',
+      whatsapp: 'Contato via WhatsApp',
+      email: 'Contato via Email',
+      call: 'Ligação',
+      social: 'Contato via Redes Sociais'
+    };
+    return titles[type as keyof typeof titles] || 'Interação';
   };
 
   return (
@@ -985,18 +999,6 @@ const AddInteractionModal = ({
                 </option>
               ))}
             </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Título</label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              required
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Título da anotação"
-            />
           </div>
 
           <div>
