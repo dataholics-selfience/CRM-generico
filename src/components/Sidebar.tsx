@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, BarChart3, Sun, Moon, Settings, Users, Building } from 'lucide-react';
+import { X, BarChart3, Sun, Moon, Settings, Users, Building, Edit } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
