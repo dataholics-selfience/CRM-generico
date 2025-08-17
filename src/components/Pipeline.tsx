@@ -470,6 +470,17 @@ const Pipeline = () => {
                           <UserPlus size={16} />
                           Vendedor
                         </button>
+                        
+                        <button
+                          onClick={() => {
+                            navigate('/cadastro-administrador');
+                            setShowNewDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-white hover:bg-gray-700 transition-colors flex items-center gap-2"
+                        >
+                          <Settings size={16} />
+                          Administrador
+                        </button>
                       </>
                     )}
                   </div>

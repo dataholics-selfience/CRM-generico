@@ -15,6 +15,7 @@ import Pipeline from './components/Pipeline';
 import ClientDetail from './components/ClientDetail';
 import BusinessDetail from './components/BusinessDetail';
 import SalesmanRegistration from './components/SalesmanRegistration';
+import AdminRegistration from './components/AdminRegistration';
 import ServiceManagement from './components/ServiceManagement';
 import Dashboard from './components/Dashboard';
 import StageManagement from './components/StageManagement';
@@ -74,6 +75,7 @@ function App() {
           <Route path="/client/:id" element={userData?.emailVerified ? <ClientDetail /> : <Navigate to="/verify-email" replace />} />
           <Route path="/negocio/:id" element={userData?.emailVerified ? <BusinessDetail /> : <Navigate to="/verify-email" replace />} />
           <Route path="/cadastro-vendedor" element={userData?.emailVerified && userData?.role === 'admin' ? <SalesmanRegistration /> : <Navigate to="/" replace />} />
+          <Route path="/cadastro-administrador" element={userData?.emailVerified && userData?.role === 'admin' ? <AdminRegistration /> : <Navigate to="/" replace />} />
           <Route path="/services" element={userData?.emailVerified && userData?.role === 'admin' ? <ServiceManagement /> : <Navigate to="/" replace />} />
           <Route path="/stages" element={userData?.emailVerified && userData?.role === 'admin' ? <StageManagement /> : <Navigate to="/" replace />} />
           <Route path="/dashboard" element={userData?.emailVerified ? <Dashboard /> : <Navigate to="/verify-email" replace />} />
