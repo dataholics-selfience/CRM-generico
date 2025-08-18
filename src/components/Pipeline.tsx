@@ -182,7 +182,10 @@ const PipelineStage = ({
               <BusinessCard
                 key={business.id}
                 business={business}
-                company={company || null}
+                    <p className="text-green-400 text-xs font-medium">
+                      Setup: R$ {(business.setupValue || 0).toLocaleString()} | 
+                      Mensal: R$ {(business.monthlyValue || 0).toLocaleString()}
+                    </p>
                 contacts={businessContacts}
                 onRemove={onRemoveBusiness}
                 onClick={() => onBusinessClick(business.id)}
