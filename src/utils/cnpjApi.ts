@@ -48,11 +48,11 @@ export const fetchCNPJData = async (cnpj: string): Promise<CNPJData> => {
     throw new Error('CNPJ deve ter 14 dígitos');
   }
 
-  // Determine the URL based on environment
+  // Always use proxy in development, use CORS proxy in production
   const isDevelopment = import.meta.env.DEV;
   const apiUrl = isDevelopment 
-    ? `/api/cnpj/${cleanCNPJ}` // Use proxy in development
-    : `https://www.receitaws.com.br/v1/cnpj/${cleanCNPJ}`; // Direct API call in production
+    ? `/api/cnpj/${cleanCNPJ}` // Use Vite proxy in development
+    : `https://api.allorigins.win/get?url=${encodeURIComponent(`https://www.receitaws.com.br/v1/cnpj/${cleanCNPJ}`)}`; // Use CORS proxy in production
 
   try {
     const response = await fetch(apiUrl, {
@@ -61,15 +61,25 @@ export const fetchCNPJData = async (cnpj: string): Promise<CNPJData> => {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
-      // Add CORS mode for production
-      ...(isDevelopment ? {} : { mode: 'cors' })
     });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data: CNPJData = await response.json();
+    let data: CNPJData;
+    
+    if (isDevelopment) {
+      // In development, response is direct from ReceitaWS
+      data = await response.json();
+    } else {
+      // In production, response is wrapped by AllOrigins
+      const proxyResponse = await response.json();
+      if (proxyResponse.status && proxyResponse.status.http_code !== 200) {
+        throw new Error(`API error! status: ${proxyResponse.status.http_code}`);
+      }
+      data = JSON.parse(proxyResponse.contents);
+    }
 
     if (data.status === 'ERROR') {
       throw new Error(data.message || 'CNPJ não encontrado');
