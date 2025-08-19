@@ -391,38 +391,7 @@ const Pipeline = () => {
           </div>
           
           <div className="flex items-center gap-3">
-            {userData?.role === 'admin' && (
-              <>
-                {/* Desktop buttons */}
-                <div className="hidden md:flex items-center gap-3">
-                  <button
-                    onClick={() => navigate('/services')}
-                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    <Settings size={18} />
-                    Serviços
-                  </button>
-                  
-                  <button
-                    onClick={() => navigate('/stages')}
-                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    <Edit size={18} />
-                    Etapas
-                  </button>
-                  
-                  <button
-                    onClick={() => navigate('/dashboard')}
-                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    <BarChart3 size={18} />
-                    Dashboard
-                  </button>
-                </div>
-              </>
-            )}
-            
-            {/* Dropdown "Novo" */}
+            {/* Dropdown "Novo" - movido para primeira posição */}
             <div className="relative">
               <button
                 onClick={() => setShowNewDropdown(!showNewDropdown)}
@@ -434,7 +403,7 @@ const Pipeline = () => {
               </button>
               
               {showNewDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 z-50">
+                <div className="absolute left-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 z-50">
                   <div className="py-2">
                     <button
                       onClick={() => {
@@ -487,6 +456,37 @@ const Pipeline = () => {
                 </div>
               )}
             </div>
+
+            {userData?.role === 'admin' && (
+              <>
+                {/* Desktop buttons */}
+                <div className="hidden md:flex items-center gap-3">
+                  <button
+                    onClick={() => navigate('/services')}
+                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    <Settings size={18} />
+                    Serviços
+                  </button>
+                  
+                  <button
+                    onClick={() => navigate('/stages')}
+                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    <Edit size={18} />
+                    Etapas
+                  </button>
+                  
+                  <button
+                    onClick={() => navigate('/dashboard')}
+                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    <BarChart3 size={18} />
+                    Dashboard
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

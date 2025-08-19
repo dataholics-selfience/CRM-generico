@@ -54,6 +54,7 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
   // Company data
   const [companyData, setCompanyData] = useState({
     nome: '',
+    cnpj: '',
     segmento: '',
     regiao: '',
     tamanho: '',
@@ -222,6 +223,18 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
                   />
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    CNPJ
+                  </label>
+                  <input
+                    type="text"
+                    value={companyData.cnpj}
+                    onChange={(e) => handleCompanyChange('cnpj', e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="00.000.000/0000-00"
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Segmento *
@@ -444,7 +457,7 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Valor do Negócio (R$) *
+                    Setup inicial (R$) *
                   </label>
                   <input
                     type="number"
