@@ -54,7 +54,32 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
   // Company data
   const [companyData, setCompanyData] = useState({
     nome: '',
+    fantasia: '',
     cnpj: '',
+    abertura: '',
+    situacao: '',
+    tipo: '',
+    porte: '',
+    natureza_juridica: '',
+    atividade_principal: [] as Array<{code: string, text: string}>,
+    atividades_secundarias: [] as Array<{code: string, text: string}>,
+    qsa: [] as Array<{nome: string, qual: string}>,
+    logradouro: '',
+    numero: '',
+    complemento: '',
+    municipio: '',
+    bairro: '',
+    uf: '',
+    cep: '',
+    email: '',
+    telefone: '',
+    data_situacao: '',
+    ultima_atualizacao: '',
+    capital_social: '',
+    efr: '',
+    motivo_situacao: '',
+    situacao_especial: '',
+    data_situacao_especial: '',
     segmento: '',
     regiao: '',
     tamanho: '',
@@ -122,7 +147,7 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
     setCnpjError('');
 
     try {
-      const response = await fetch(`https://www.receitaws.com.br/v1/cnpj/${cleanCNPJ}`);
+      const response = await fetch(`/api/cnpj/${cleanCNPJ}`);
       
       if (!response.ok) {
         throw new Error('Erro ao consultar CNPJ');
@@ -209,7 +234,32 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
       // Atualizar dados da empresa
       setCompanyData(prev => ({
         ...prev,
-        nome: data.fantasia || data.nome || prev.nome,
+        nome: data.nome || prev.nome,
+        fantasia: data.fantasia || '',
+        abertura: data.abertura || '',
+        situacao: data.situacao || '',
+        tipo: data.tipo || '',
+        porte: data.porte || '',
+        natureza_juridica: data.natureza_juridica || '',
+        atividade_principal: data.atividade_principal || [],
+        atividades_secundarias: data.atividades_secundarias || [],
+        qsa: data.qsa || [],
+        logradouro: data.logradouro || '',
+        numero: data.numero || '',
+        complemento: data.complemento || '',
+        municipio: data.municipio || '',
+        bairro: data.bairro || '',
+        uf: data.uf || '',
+        cep: data.cep || '',
+        email: data.email || '',
+        telefone: data.telefone || '',
+        data_situacao: data.data_situacao || '',
+        ultima_atualizacao: data.ultima_atualizacao || '',
+        capital_social: data.capital_social || '',
+        efr: data.efr || '',
+        motivo_situacao: data.motivo_situacao || '',
+        situacao_especial: data.situacao_especial || '',
+        data_situacao_especial: data.data_situacao_especial || '',
         segmento: determineSegmento(data.atividade_principal),
         regiao: determineRegiao(data.uf),
         tamanho: mapPorte(data.porte),
@@ -364,32 +414,19 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
           {/* Step 1: Company Information */}
           {currentStep === 1 && (
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-white mb-4">Informações da Empresa</h3>
+              <h3 className="text-lg font-medium text-white mb-4">Buscar Empresa por CNPJ</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+              <div className="max-w-md mx-auto">
+                <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Nome da Empresa *
-                  </label>
-                  <input
-                    type="text"
-                    value={companyData.nome}
-                    onChange={(e) => handleCompanyChange('nome', e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Nome da empresa"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    CNPJ
+                    CNPJ da Empresa *
                   </label>
                   <div className="relative">
                     <input
                       type="text"
                       value={companyData.cnpj}
                       onChange={(e) => handleCNPJChange(e.target.value)}
+                      required
                       className="w-full px-3 py-2 pr-10 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="00.000.000/0000-00"
                       maxLength={18}
@@ -414,102 +451,123 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
                     <p className="text-red-400 text-xs mt-1">{cnpjError}</p>
                   )}
                   <p className="text-gray-500 text-xs mt-1">
-                    Os dados da empresa serão preenchidos automaticamente
+                    Digite o CNPJ para buscar automaticamente os dados da empresa
                   </p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Segmento *
-                  </label>
-                  <select
-                    value={companyData.segmento}
-                    onChange={(e) => handleCompanyChange('segmento', e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Selecione o segmento</option>
-                    <option value="Tecnologia">Tecnologia</option>
-                    <option value="Saúde">Saúde</option>
-                    <option value="Educação">Educação</option>
-                    <option value="Financeiro">Financeiro</option>
-                    <option value="Varejo">Varejo</option>
-                    <option value="Indústria">Indústria</option>
-                    <option value="Serviços">Serviços</option>
-                    <option value="Agronegócio">Agronegócio</option>
-                    <option value="Outros">Outros</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Região *
-                  </label>
-                  <select
-                    value={companyData.regiao}
-                    onChange={(e) => handleCompanyChange('regiao', e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Selecione a região</option>
-                    <option value="Norte">Norte</option>
-                    <option value="Nordeste">Nordeste</option>
-                    <option value="Centro-Oeste">Centro-Oeste</option>
-                    <option value="Sudeste">Sudeste</option>
-                    <option value="Sul">Sul</option>
-                    <option value="Internacional">Internacional</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Tamanho da Empresa *
-                  </label>
-                  <select
-                    value={companyData.tamanho}
-                    onChange={(e) => handleCompanyChange('tamanho', e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Selecione o tamanho</option>
-                    <option value="Micro (até 9 funcionários)">Micro (até 9 funcionários)</option>
-                    <option value="Pequena (10-49 funcionários)">Pequena (10-49 funcionários)</option>
-                    <option value="Média (50-249 funcionários)">Média (50-249 funcionários)</option>
-                    <option value="Grande (250+ funcionários)">Grande (250+ funcionários)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Faturamento Anual
-                  </label>
-                  <select
-                    value={companyData.faturamento}
-                    onChange={(e) => handleCompanyChange('faturamento', e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Selecione o faturamento</option>
-                    <option value="Até R$ 360 mil">Até R$ 360 mil</option>
-                    <option value="R$ 360 mil - R$ 4,8 milhões">R$ 360 mil - R$ 4,8 milhões</option>
-                    <option value="R$ 4,8 milhões - R$ 300 milhões">R$ 4,8 milhões - R$ 300 milhões</option>
-                    <option value="Acima de R$ 300 milhões">Acima de R$ 300 milhões</option>
-                    <option value="Não informado">Não informado</option>
-                  </select>
-                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Dores/Necessidades *
-                </label>
-                <textarea
-                  value={companyData.dores}
-                  onChange={(e) => handleCompanyChange('dores', e.target.value)}
-                  required
-                  rows={4}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="Descreva as principais dores e necessidades da empresa..."
-                />
-              </div>
+              {/* Show company data if loaded */}
+              {companyData.nome && (
+                <div className="bg-gray-700 rounded-lg p-4 mt-6">
+                  <h4 className="text-white font-medium mb-4">Dados da Empresa</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-400">Razão Social:</span>
+                      <p className="text-white">{companyData.nome}</p>
+                    </div>
+                    
+                    {companyData.fantasia && (
+                      <div>
+                        <span className="text-gray-400">Nome Fantasia:</span>
+                        <p className="text-white">{companyData.fantasia}</p>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <span className="text-gray-400">Situação:</span>
+                      <p className={`font-medium ${companyData.situacao === 'ATIVA' ? 'text-green-400' : 'text-red-400'}`}>
+                        {companyData.situacao}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <span className="text-gray-400">Porte:</span>
+                      <p className="text-white">{companyData.porte}</p>
+                    </div>
+                    
+                    <div>
+                      <span className="text-gray-400">Abertura:</span>
+                      <p className="text-white">{companyData.abertura}</p>
+                    </div>
+                    
+                    <div>
+                      <span className="text-gray-400">Tipo:</span>
+                      <p className="text-white">{companyData.tipo}</p>
+                    </div>
+                    
+                    {companyData.email && (
+                      <div>
+                        <span className="text-gray-400">Email:</span>
+                        <p className="text-white">{companyData.email}</p>
+                      </div>
+                    )}
+                    
+                    {companyData.telefone && (
+                      <div>
+                        <span className="text-gray-400">Telefone:</span>
+                        <p className="text-white">{companyData.telefone}</p>
+                      </div>
+                    )}
+                    
+                    {companyData.capital_social && (
+                      <div>
+                        <span className="text-gray-400">Capital Social:</span>
+                        <p className="text-white">R$ {parseFloat(companyData.capital_social).toLocaleString()}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {companyData.logradouro && (
+                    <div className="mt-4">
+                      <span className="text-gray-400">Endereço:</span>
+                      <p className="text-white">
+                        {companyData.logradouro}, {companyData.numero}
+                        {companyData.complemento && ` - ${companyData.complemento}`}
+                        <br />
+                        {companyData.bairro} - {companyData.municipio}/{companyData.uf}
+                        <br />
+                        CEP: {companyData.cep}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {companyData.atividade_principal.length > 0 && (
+                    <div className="mt-4">
+                      <span className="text-gray-400">Atividade Principal:</span>
+                      <p className="text-white">
+                        {companyData.atividade_principal[0].code} - {companyData.atividade_principal[0].text}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {companyData.atividades_secundarias.length > 0 && (
+                    <div className="mt-4">
+                      <span className="text-gray-400">Atividades Secundárias:</span>
+                      <div className="text-white">
+                        {companyData.atividades_secundarias.map((atividade, index) => (
+                          <p key={index} className="text-sm">
+                            {atividade.code} - {atividade.text}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {companyData.qsa.length > 0 && (
+                    <div className="mt-4">
+                      <span className="text-gray-400">Quadro Societário:</span>
+                      <div className="text-white">
+                        {companyData.qsa.map((socio, index) => (
+                          <p key={index} className="text-sm">
+                            {socio.nome} - {socio.qual}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -753,6 +811,7 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
                 <button
                   type="button"
                   onClick={() => setCurrentStep(prev => prev + 1)}
+                  disabled={currentStep === 1 && !companyData.nome}
                   className="py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md text-white font-medium transition-colors"
                 >
                   Próximo

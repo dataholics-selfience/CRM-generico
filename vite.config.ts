@@ -21,6 +21,16 @@ function copyRedirectsPlugin() {
 
 export default defineConfig({
   plugins: [react(), copyRedirectsPlugin()],
+  server: {
+    proxy: {
+      '/api/cnpj': {
+        target: 'https://www.receitaws.com.br/v1/cnpj',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/cnpj/, ''),
+        secure: true
+      }
+    }
+  },
   build: {
     outDir: 'dist',
     sourcemap: false,
