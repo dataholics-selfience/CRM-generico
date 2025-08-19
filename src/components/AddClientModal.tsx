@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Save, Loader2, Plus, Trash2 } from 'lucide-react';
-import { addDoc, collection, doc, setDoc, query, where, getDocs } from 'firebase/firestore';
+import { addDoc, collection, doc, setDoc, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { ServiceType, UserType, PipelineStageType } from '../types';
 
@@ -16,6 +16,7 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [userServices, setUserServices] = useState<ServiceType[]>([]);
+  const [allUsers, setAllUsers] = useState<UserType[]>([]);
 
   // Filter services based on user role and assigned services
   useState(() => {
@@ -51,9 +52,33 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
     filterServices();
   });
 
+  // Fetch all users for admin to select responsible salesperson
+  useState(() => {
+    const fetchUsers = async () => {
+      if (!userData || userData.role !== 'admin') return;
+      
+      try {
+        const usersQuery = query(collection(db, 'users'));
+        const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
+          const usersData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as UserType[];
+          setAllUsers(usersData.filter(user => user.role === 'vendedor' || user.role === 'admin'));
+        });
+        return () => unsubscribe();
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+
+    fetchUsers();
+  });
+
   // Company data
   const [companyData, setCompanyData] = useState({
     nome: '',
+    cnpj: '',
     segmento: '',
     regiao: '',
     tamanho: '',
@@ -73,11 +98,12 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
   // Business data
   const [businessData, setBusinessData] = useState({
     nome: '',
-    valor: 0,
+    setupInicial: 0,
     serviceId: '',
     planId: '',
     stage: stages.length > 0 ? stages[0].id : '',
-    description: ''
+    description: '',
+    assignedTo: auth.currentUser?.uid || ''
   });
 
   const handleCompanyChange = (field: string, value: string) => {
@@ -145,7 +171,7 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
         ...businessData,
         companyId: companyRef.id,
         contactIds,
-        assignedTo: auth.currentUser.uid,
+        assignedTo: businessData.assignedTo,
         createdBy: auth.currentUser.uid,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -219,6 +245,19 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
                     required
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Nome da empresa"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    CNPJ
+                  </label>
+                  <input
+                    type="text"
+                    value={companyData.cnpj}
+                    onChange={(e) => handleCompanyChange('cnpj', e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="00.000.000/0000-00"
                   />
                 </div>
 
@@ -444,12 +483,12 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Valor do Negócio (R$) *
+                    Setup inicial (R$) *
                   </label>
                   <input
                     type="number"
-                    value={businessData.valor}
-                    onChange={(e) => handleBusinessChange('valor', Number(e.target.value))}
+                    value={businessData.setupInicial}
+                    onChange={(e) => handleBusinessChange('setupInicial', Number(e.target.value))}
                     required
                     min="0"
                     step="0.01"
@@ -513,6 +552,34 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Vendedor Responsável *
+                  </label>
+                  {userData?.role === 'admin' ? (
+                    <select
+                      value={businessData.assignedTo}
+                      onChange={(e) => handleBusinessChange('assignedTo', e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Selecione o vendedor</option>
+                      {allUsers.map((user) => (
+                        <option key={user.uid} value={user.uid}>
+                          {user.name} ({user.role === 'admin' ? 'Administrador' : 'Vendedor'})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={userData?.name || ''}
+                      disabled
+                      className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md text-gray-300 cursor-not-allowed"
+                    />
+                  )}
                 </div>
               </div>
 
