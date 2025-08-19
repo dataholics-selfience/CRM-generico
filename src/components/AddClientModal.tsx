@@ -4,7 +4,7 @@ import { addDoc, collection, doc, setDoc, query, where, getDocs } from 'firebase
 import { db, auth } from '../firebase';
 import { ServiceType, UserType, PipelineStageType } from '../types';
 import { 
-  fetchCNPJData, 
+  fetchCNPJData as importedFetchCNPJData, 
   formatCNPJ, 
   mapPorte, 
   mapFaturamento, 
@@ -130,12 +130,12 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
     setBusinessData(prev => ({ ...prev, [field]: value }));
   };
 
-  const fetchCNPJData = async (cnpj: string) => {
+  const handleFetchCNPJDataFromApi = async (cnpj: string) => {
     setIsLoadingCNPJ(true);
     setCnpjError('');
 
     try {
-      const data = await fetchCNPJData(cnpj);
+      const data = await importedFetchCNPJData(cnpj);
 
       // Atualizar dados da empresa
       setCompanyData(prev => ({
@@ -205,12 +205,8 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
     // Auto-buscar quando CNPJ estiver completo
     const cleanCNPJ = value.replace(/\D/g, '');
     if (cleanCNPJ.length === 14) {
-      fetchCNPJDataWrapper(formattedCNPJ);
+      handleFetchCNPJDataFromApi(formattedCNPJ);
     }
-  };
-
-  const fetchCNPJDataWrapper = async (cnpj: string) => {
-    await fetchCNPJData(cnpj);
   };
 
   const addContact = () => {
@@ -349,7 +345,7 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
                     {!isLoadingCNPJ && companyData.cnpj.replace(/\D/g, '').length === 14 && (
                       <button
                         type="button"
-                        onClick={() => fetchCNPJData(companyData.cnpj)}
+                        onClick={() => handleFetchCNPJDataFromApi(companyData.cnpj)}
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-400 hover:text-blue-300"
                         title="Buscar dados do CNPJ"
                       >
