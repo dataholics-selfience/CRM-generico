@@ -112,16 +112,69 @@ const Dashboard = () => {
           ? closedBusinesses.reduce((sum, business) => sum + business.valor, 0) / closedBusinesses.length
           : 0;
 
-        // Calculate pipeline value (excluding closed and lost)
-        const pipelineValue = businesses
+        // Calculate pipeline value (setup + 12 monthly payments for active businesses)
+        let pipelineValue = 0;
+        let mrr = 0; // Monthly Recurring Revenue
+        let monthlyRevenue = 0; // Receita total mensal (setup + mensalidades)
+        let annualRevenue = 0; // Receita total anual
+        let arr = 0; // Annual Recurring Revenue
+
+        // Calculate metrics for active businesses (excluding closed and lost)
+        const activeBusinesses = businesses
           .filter(business => {
             if (lostStage && business.stage === lostStage.id) return false;
             if (closedStage && business.stage === closedStage.id) return false;
             return true;
-          })
-          .reduce((sum, business) => {
-            return sum + business.valor;
-          }, 0);
+          });
+
+        // Calculate metrics for closed businesses (won deals)
+        const wonBusinesses = businesses.filter(business => 
+          closedStage ? business.stage === closedStage.id : false
+        );
+
+        activeBusinesses.forEach(business => {
+          const service = services.find(s => s.id === business.serviceId);
+          const plan = service?.plans.find(p => p.id === business.planId);
+          
+          if (plan) {
+            const setupValue = business.valor;
+            const monthlyValue = plan.price;
+            
+            // Pipeline value: setup + 12 monthly payments
+            pipelineValue += setupValue + (monthlyValue * 12);
+          } else {
+            // Fallback if no plan found
+            pipelineValue += business.valor;
+          }
+        });
+
+        wonBusinesses.forEach(business => {
+          const service = services.find(s => s.id === business.serviceId);
+          const plan = service?.plans.find(p => p.id === business.planId);
+          
+          if (plan) {
+            const setupValue = business.valor;
+            const monthlyValue = plan.price;
+            
+            // Check if closed this month
+            const closedAt = new Date(business.updatedAt);
+            const isClosedThisMonth = closedAt >= currentMonthStart && closedAt <= currentMonthEnd;
+            
+            if (isClosedThisMonth) {
+              // MRR: only recurring revenue
+              mrr += monthlyValue;
+              
+              // Monthly Revenue: setup + monthly payment
+              monthlyRevenue += setupValue + monthlyValue;
+            }
+            
+            // Annual Revenue: setup + 12 monthly payments for all won deals
+            annualRevenue += setupValue + (monthlyValue * 12);
+            
+            // ARR: only recurring revenue (12 monthly payments)
+            arr += monthlyValue * 12;
+          }
+        });
 
         // Sales status breakdown
         const salesStatus = {
@@ -185,6 +238,10 @@ const Dashboard = () => {
           conversionRate,
           averageTicket,
           pipelineValue,
+          mrr,
+          monthlyRevenue,
+          annualRevenue,
+          arr,
           clientsByStage: businessesByStage,
           salesStatus,
           salesByService,
@@ -277,6 +334,37 @@ const Dashboard = () => {
           />
         </div>
 
+        {/* Revenue Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <MetricCard
+            title="MRR"
+            value={`R$ ${metrics.mrr.toLocaleString()}`}
+            icon={TrendingUp}
+            color="green"
+            subtitle="Receita recorrente mensal"
+          />
+          <MetricCard
+            title="Receita Mensal"
+            value={`R$ ${metrics.monthlyRevenue.toLocaleString()}`}
+            icon={DollarSign}
+            color="blue"
+            subtitle="Setup + mensalidades"
+          />
+          <MetricCard
+            title="Receita Anual"
+            value={`R$ ${metrics.annualRevenue.toLocaleString()}`}
+            icon={Award}
+            color="purple"
+            subtitle="Total anual dos contratos"
+          />
+          <MetricCard
+            title="ARR"
+            value={`R$ ${metrics.arr.toLocaleString()}`}
+            icon={Target}
+            color="yellow"
+            subtitle="Receita recorrente anual"
+          />
+        </div>
         {/* Pipeline Value */}
         <div className="mb-8">
           <div className="bg-gray-800 rounded-lg p-6">
@@ -288,8 +376,14 @@ const Dashboard = () => {
               R$ {metrics.pipelineValue.toLocaleString()}
             </div>
             <p className="text-gray-400 mt-2">
-              Valor total de negócios em andamento
+              Valor total de negócios em andamento (setup + 12 mensalidades)
             </p>
+            <div className="mt-4 p-3 bg-gray-700 rounded-lg">
+              <p className="text-gray-300 text-sm">
+                <strong>Como calculamos:</strong> Para cada negócio ativo, somamos o valor do setup inicial 
+                mais 12 prestações mensais do plano contratado, representando o valor total do contrato de 12 meses.
+              </p>
+            </div>
           </div>
         </div>
 

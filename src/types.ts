@@ -224,6 +224,10 @@ export interface DashboardMetrics {
   conversionRate: number;
   averageTicket: number;
   pipelineValue: number;
+  mrr: number; // Monthly Recurring Revenue
+  monthlyRevenue: number; // Receita total mensal
+  annualRevenue: number; // Receita total anual
+  arr: number; // Annual Recurring Revenue
   clientsByStage: Record<string, number>;
   salesStatus: {
     won: number;
