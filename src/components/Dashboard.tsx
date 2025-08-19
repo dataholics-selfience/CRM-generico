@@ -123,29 +123,6 @@ const Dashboard = () => {
             return sum + business.valor;
           }, 0);
 
-        // Calculate monthly value (closed businesses this month)
-        const monthlyValue = closedBusinesses
-          .filter(business => {
-            const updatedAt = new Date(business.updatedAt);
-            return updatedAt >= currentMonthStart && updatedAt <= currentMonthEnd;
-          })
-          .reduce((sum, business) => {
-            return sum + (business.setupValue || 0) + (business.monthlyValue || 0);
-          }, 0);
-
-        // Calculate total value (all closed businesses)
-        const totalValue = closedBusinesses.reduce((sum, business) => {
-          const setupValue = business.setupValue || 0;
-          const monthlyValue = business.monthlyValue || 0;
-          // Assuming 12 months for total calculation
-          return sum + setupValue + (monthlyValue * 12);
-        }, 0);
-
-        // Calculate MRR (Monthly Recurring Revenue from closed businesses)
-        const mrr = closedBusinesses.reduce((sum, business) => {
-          return sum + (business.monthlyValue || 0);
-        }, 0);
-
         // Sales status breakdown
         const salesStatus = {
           won: closedBusinesses.length,
@@ -208,9 +185,6 @@ const Dashboard = () => {
           conversionRate,
           averageTicket,
           pipelineValue,
-          monthlyValue,
-          totalValue,
-          mrr,
           clientsByStage: businessesByStage,
           salesStatus,
           salesByService,
@@ -294,39 +268,12 @@ const Dashboard = () => {
             value={`${metrics.conversionRate.toFixed(1)}%`}
             icon={TrendingUp}
             color="purple"
-            subtitle="Negócios fechados vs total"
           />
           <MetricCard
             title="Ticket Médio"
             value={`R$ ${metrics.averageTicket.toLocaleString()}`}
             icon={DollarSign}
             color="yellow"
-            subtitle="Valor médio por negócio"
-          />
-        </div>
-
-        {/* New Financial Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <MetricCard
-            title="Valor Mensal"
-            value={`R$ ${metrics.monthlyValue.toLocaleString()}`}
-            icon={DollarSign}
-            color="green"
-            subtitle="Setup + mensalidade deste mês"
-          />
-          <MetricCard
-            title="Valor Total"
-            value={`R$ ${metrics.totalValue.toLocaleString()}`}
-            icon={DollarSign}
-            color="blue"
-            subtitle="Setup + 12x mensalidade (fechados)"
-          />
-          <MetricCard
-            title="MRR"
-            value={`R$ ${metrics.mrr.toLocaleString()}`}
-            icon={TrendingUp}
-            color="purple"
-            subtitle="Receita recorrente mensal"
           />
         </div>
 
