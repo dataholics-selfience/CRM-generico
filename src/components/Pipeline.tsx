@@ -491,16 +491,12 @@ const Pipeline = () => {
         </div>
 
         <div className="flex-1 overflow-x-auto p-6">
-          <div className={`grid gap-4 min-w-max ${
-            activeStages.length <= 3 ? 'grid-cols-1 lg:grid-cols-3' :
-            activeStages.length <= 5 ? 'grid-cols-1 lg:grid-cols-3 xl:grid-cols-5' :
-            'grid-cols-1 lg:grid-cols-3 xl:grid-cols-6'
-          }`}>
+          <div className="grid gap-4 h-full" style={{ gridTemplateColumns: `repeat(${activeStages.length}, 1fr)` }}>
             {activeStages.map((stage) => {
               const stageBusinesses = businesses.filter(business => business.stage === stage.id);
               
               return (
-                <div key={stage.id} className="min-w-[280px]">
+                <div key={stage.id} className="min-w-0">
                   <PipelineStage
                     stage={stage}
                     businesses={stageBusinesses}
