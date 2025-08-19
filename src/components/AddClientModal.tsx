@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Save, Loader2, Plus, Trash2 } from 'lucide-react';
+import { X, Save, Loader2, Plus, Trash2, Search } from 'lucide-react';
 import { addDoc, collection, doc, setDoc, query, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { ServiceType, UserType, PipelineStageType } from '../types';
@@ -61,6 +61,8 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
     faturamento: '',
     dores: ''
   });
+  const [isLoadingCNPJ, setIsLoadingCNPJ] = useState(false);
+  const [cnpjError, setCnpjError] = useState('');
 
   // Contacts data
   const [contacts, setContacts] = useState([{
@@ -93,6 +95,162 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
 
   const handleBusinessChange = (field: string, value: string | number) => {
     setBusinessData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const formatCNPJ = (value: string) => {
+    // Remove tudo que não é dígito
+    const digits = value.replace(/\D/g, '');
+    
+    // Aplica a máscara XX.XXX.XXX/XXXX-XX
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+    if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+    if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12, 14)}`;
+  };
+
+  const fetchCNPJData = async (cnpj: string) => {
+    // Remove formatação do CNPJ
+    const cleanCNPJ = cnpj.replace(/\D/g, '');
+    
+    if (cleanCNPJ.length !== 14) {
+      setCnpjError('CNPJ deve ter 14 dígitos');
+      return;
+    }
+
+    setIsLoadingCNPJ(true);
+    setCnpjError('');
+
+    try {
+      const response = await fetch(`https://www.receitaws.com.br/v1/cnpj/${cleanCNPJ}`);
+      
+      if (!response.ok) {
+        throw new Error('Erro ao consultar CNPJ');
+      }
+
+      const data = await response.json();
+
+      if (data.status === 'ERROR') {
+        setCnpjError(data.message || 'CNPJ não encontrado');
+        return;
+      }
+
+      // Mapear porte da empresa para nossos valores
+      const mapPorte = (porte: string) => {
+        if (porte.includes('MICRO')) return 'Micro (até 9 funcionários)';
+        if (porte.includes('PEQUENO')) return 'Pequena (10-49 funcionários)';
+        if (porte.includes('MEDIO') || porte.includes('MÉDIO')) return 'Média (50-249 funcionários)';
+        if (porte.includes('GRANDE')) return 'Grande (250+ funcionários)';
+        return 'Micro (até 9 funcionários)'; // Default
+      };
+
+      // Mapear faturamento baseado no capital social
+      const mapFaturamento = (capitalSocial: string) => {
+        const capital = parseFloat(capitalSocial.replace(/[^\d,]/g, '').replace(',', '.'));
+        if (capital <= 360000) return 'Até R$ 360 mil';
+        if (capital <= 4800000) return 'R$ 360 mil - R$ 4,8 milhões';
+        if (capital <= 300000000) return 'R$ 4,8 milhões - R$ 300 milhões';
+        return 'Acima de R$ 300 milhões';
+      };
+
+      // Determinar segmento baseado na atividade principal
+      const determineSegmento = (atividadePrincipal: any[]) => {
+        if (!atividadePrincipal || atividadePrincipal.length === 0) return 'Outros';
+        
+        const atividade = atividadePrincipal[0].text.toLowerCase();
+        
+        if (atividade.includes('tecnologia') || atividade.includes('software') || 
+            atividade.includes('dados') || atividade.includes('internet') ||
+            atividade.includes('hospedagem') || atividade.includes('aplicação')) {
+          return 'Tecnologia';
+        }
+        if (atividade.includes('saúde') || atividade.includes('médic') || atividade.includes('hospital')) {
+          return 'Saúde';
+        }
+        if (atividade.includes('educação') || atividade.includes('ensino') || atividade.includes('escola')) {
+          return 'Educação';
+        }
+        if (atividade.includes('financ') || atividade.includes('banco') || atividade.includes('crédito')) {
+          return 'Financeiro';
+        }
+        if (atividade.includes('varejo') || atividade.includes('comércio') || atividade.includes('venda')) {
+          return 'Varejo';
+        }
+        if (atividade.includes('indústria') || atividade.includes('fabricação') || atividade.includes('manufatura')) {
+          return 'Indústria';
+        }
+        if (atividade.includes('agro') || atividade.includes('rural') || atividade.includes('pecuária')) {
+          return 'Agronegócio';
+        }
+        if (atividade.includes('serviço') || atividade.includes('consultoria') || atividade.includes('assessoria')) {
+          return 'Serviços';
+        }
+        
+        return 'Outros';
+      };
+
+      // Determinar região baseado no UF
+      const determineRegiao = (uf: string) => {
+        const norte = ['AC', 'AP', 'AM', 'PA', 'RO', 'RR', 'TO'];
+        const nordeste = ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE'];
+        const centroOeste = ['GO', 'MT', 'MS', 'DF'];
+        const sudeste = ['ES', 'MG', 'RJ', 'SP'];
+        const sul = ['PR', 'RS', 'SC'];
+        
+        if (norte.includes(uf)) return 'Norte';
+        if (nordeste.includes(uf)) return 'Nordeste';
+        if (centroOeste.includes(uf)) return 'Centro-Oeste';
+        if (sudeste.includes(uf)) return 'Sudeste';
+        if (sul.includes(uf)) return 'Sul';
+        
+        return 'Sudeste'; // Default
+      };
+
+      // Atualizar dados da empresa
+      setCompanyData(prev => ({
+        ...prev,
+        nome: data.fantasia || data.nome || prev.nome,
+        segmento: determineSegmento(data.atividade_principal),
+        regiao: determineRegiao(data.uf),
+        tamanho: mapPorte(data.porte),
+        faturamento: data.capital_social ? mapFaturamento(data.capital_social) : prev.faturamento,
+        dores: `Empresa do segmento ${determineSegmento(data.atividade_principal).toLowerCase()}, ${data.porte.toLowerCase()}. Atividade principal: ${data.atividade_principal?.[0]?.text || 'Não informado'}.`
+      }));
+
+      // Atualizar contatos com dados da empresa
+      if (data.email || data.telefone) {
+        setContacts(prev => {
+          const newContacts = [...prev];
+          if (newContacts.length > 0) {
+            newContacts[0] = {
+              ...newContacts[0],
+              email: data.email || newContacts[0].email,
+              whatsapp: data.telefone || newContacts[0].whatsapp,
+              nome: newContacts[0].nome || 'Contato Principal'
+            };
+          }
+          return newContacts;
+        });
+      }
+
+    } catch (error) {
+      console.error('Error fetching CNPJ data:', error);
+      setCnpjError('Erro ao consultar CNPJ. Tente novamente.');
+    } finally {
+      setIsLoadingCNPJ(false);
+    }
+  };
+
+  const handleCNPJChange = (value: string) => {
+    const formattedCNPJ = formatCNPJ(value);
+    handleCompanyChange('cnpj', formattedCNPJ);
+    setCnpjError('');
+    
+    // Auto-buscar quando CNPJ estiver completo
+    const cleanCNPJ = value.replace(/\D/g, '');
+    if (cleanCNPJ.length === 14) {
+      fetchCNPJData(formattedCNPJ);
+    }
   };
 
   const addContact = () => {
@@ -227,13 +385,37 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     CNPJ
                   </label>
-                  <input
-                    type="text"
-                    value={companyData.cnpj}
-                    onChange={(e) => handleCompanyChange('cnpj', e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="00.000.000/0000-00"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={companyData.cnpj}
+                      onChange={(e) => handleCNPJChange(e.target.value)}
+                      className="w-full px-3 py-2 pr-10 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="00.000.000/0000-00"
+                      maxLength={18}
+                    />
+                    {isLoadingCNPJ && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                      </div>
+                    )}
+                    {!isLoadingCNPJ && companyData.cnpj.replace(/\D/g, '').length === 14 && (
+                      <button
+                        type="button"
+                        onClick={() => fetchCNPJData(companyData.cnpj)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-400 hover:text-blue-300"
+                        title="Buscar dados do CNPJ"
+                      >
+                        <Search size={16} />
+                      </button>
+                    )}
+                  </div>
+                  {cnpjError && (
+                    <p className="text-red-400 text-xs mt-1">{cnpjError}</p>
+                  )}
+                  <p className="text-gray-500 text-xs mt-1">
+                    Os dados da empresa serão preenchidos automaticamente
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
