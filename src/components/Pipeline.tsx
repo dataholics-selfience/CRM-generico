@@ -64,7 +64,7 @@ const BusinessCard = ({
           <GripVertical size={16} className="text-gray-400 group-hover:text-gray-300" />
           <div className="flex-1">
             <h3 className="text-white font-medium text-sm">{company?.nome || 'Empresa não encontrada'}</h3>
-            <p className="text-green-400 text-xs font-medium">R$ {business.setupInicial?.toLocaleString() || '0'}</p>
+            <p className="text-green-400 text-xs font-medium">R$ {business.valor.toLocaleString()}</p>
           </div>
         </div>
         <button
@@ -182,7 +182,10 @@ const PipelineStage = ({
               <BusinessCard
                 key={business.id}
                 business={business}
-                company={company || null}
+                    <p className="text-green-400 text-xs font-medium">
+                      Setup: R$ {(business.setupValue || 0).toLocaleString()} | 
+                      Mensal: R$ {(business.monthlyValue || 0).toLocaleString()}
+                    </p>
                 contacts={businessContacts}
                 onRemove={onRemoveBusiness}
                 onClick={() => onBusinessClick(business.id)}
