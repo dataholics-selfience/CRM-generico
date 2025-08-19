@@ -119,20 +119,8 @@ const Dashboard = () => {
         let annualRevenue = 0; // Receita total anual
         let arr = 0; // Annual Recurring Revenue
 
-        // Calculate metrics for active businesses (excluding closed and lost)
-        const activeBusinesses = businesses
-          .filter(business => {
-            if (lostStage && business.stage === lostStage.id) return false;
-            if (closedStage && business.stage === closedStage.id) return false;
-            return true;
-          });
-
-        // Calculate metrics for closed businesses (won deals)
-        const wonBusinesses = businesses.filter(business => 
-          closedStage ? business.stage === closedStage.id : false
-        );
-
-        activeBusinesses.forEach(business => {
+        // Calculate pipeline value for ALL businesses (including closed ones)
+        businesses.forEach(business => {
           const service = services.find(s => s.id === business.serviceId);
           const plan = service?.plans.find(p => p.id === business.planId);
           
@@ -140,13 +128,18 @@ const Dashboard = () => {
             const setupValue = business.valor;
             const monthlyValue = plan.price;
             
-            // Pipeline value: setup + 12 monthly payments
+            // Pipeline value: setup + 12 monthly payments for ALL businesses
             pipelineValue += setupValue + (monthlyValue * 12);
           } else {
             // Fallback if no plan found
             pipelineValue += business.valor;
           }
         });
+
+        // Calculate MRR and revenue metrics only for closed businesses (won deals)
+        const wonBusinesses = businesses.filter(business => 
+          closedStage ? business.stage === closedStage.id : false
+        );
 
         wonBusinesses.forEach(business => {
           const service = services.find(s => s.id === business.serviceId);
@@ -178,6 +171,35 @@ const Dashboard = () => {
 
         // Sales status breakdown
         const salesStatus = {
+          won: closedBusinesses.length,
+          lost: businesses.filter(business => 
+            lostStage ? business.stage === lostStage.id : false
+          ).length,
+          inProgress: businesses.length - closedBusinesses.length - (businesses.filter(business => 
+            lostStage ? business.stage === lostStage.id : false
+          ).length)
+        };
+
+        // Alternative calculation for inProgress to be more explicit
+        const lostBusinesses = businesses.filter(business => 
+          lostStage ? business.stage === lostStage.id : false
+        );
+        
+        const inProgressBusinesses = businesses.filter(business => {
+          if (closedStage && business.stage === closedStage.id) return false;
+          if (lostStage && business.stage === lostStage.id) return false;
+          return true;
+        });
+
+        // Update sales status with correct calculation
+        const updatedSalesStatus = {
+          won: closedBusinesses.length,
+          lost: lostBusinesses.length,
+          inProgress: inProgressBusinesses.length
+        };
+
+        // Use the updated sales status
+        const finalSalesStatus = {
           won: closedBusinesses.length,
           lost: businesses.filter(business => 
             lostStage ? business.stage === lostStage.id : false
@@ -243,7 +265,7 @@ const Dashboard = () => {
           annualRevenue,
           arr,
           clientsByStage: businessesByStage,
-          salesStatus,
+          salesStatus: finalSalesStatus,
           salesByService,
           topPerformers
         };
@@ -380,8 +402,8 @@ const Dashboard = () => {
             </p>
             <div className="mt-4 p-3 bg-gray-700 rounded-lg">
               <p className="text-gray-300 text-sm">
-                <strong>Como calculamos:</strong> Para cada negócio ativo, somamos o valor do setup inicial 
-                mais 12 prestações mensais do plano contratado, representando o valor total do contrato de 12 meses.
+                <strong>Como calculamos:</strong> Para cada negócio no pipeline (todas as etapas), somamos o valor do setup inicial 
+                mais 12 prestações mensais do plano contratado, representando o valor total potencial de todos os contratos.
               </p>
             </div>
           </div>
