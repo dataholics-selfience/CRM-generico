@@ -3,6 +3,14 @@ import { X, Save, Loader2, Plus, Trash2, Search } from 'lucide-react';
 import { addDoc, collection, doc, setDoc, query, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { ServiceType, UserType, PipelineStageType } from '../types';
+import { 
+  fetchCNPJData, 
+  formatCNPJ, 
+  mapPorte, 
+  mapFaturamento, 
+  determineSegmento, 
+  determineRegiao 
+} from '../utils/cnpjApi';
 
 interface AddClientModalProps {
   onClose: () => void;
@@ -122,114 +130,12 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
     setBusinessData(prev => ({ ...prev, [field]: value }));
   };
 
-  const formatCNPJ = (value: string) => {
-    // Remove tudo que não é dígito
-    const digits = value.replace(/\D/g, '');
-    
-    // Aplica a máscara XX.XXX.XXX/XXXX-XX
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
-    if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
-    if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
-    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12, 14)}`;
-  };
-
   const fetchCNPJData = async (cnpj: string) => {
-    // Remove formatação do CNPJ
-    const cleanCNPJ = cnpj.replace(/\D/g, '');
-    
-    if (cleanCNPJ.length !== 14) {
-      setCnpjError('CNPJ deve ter 14 dígitos');
-      return;
-    }
-
     setIsLoadingCNPJ(true);
     setCnpjError('');
 
     try {
-      const response = await fetch(`/api/cnpj/${cleanCNPJ}`);
-      
-      if (!response.ok) {
-        throw new Error('Erro ao consultar CNPJ');
-      }
-
-      const data = await response.json();
-
-      if (data.status === 'ERROR') {
-        setCnpjError(data.message || 'CNPJ não encontrado');
-        return;
-      }
-
-      // Mapear porte da empresa para nossos valores
-      const mapPorte = (porte: string) => {
-        if (porte.includes('MICRO')) return 'Micro (até 9 funcionários)';
-        if (porte.includes('PEQUENO')) return 'Pequena (10-49 funcionários)';
-        if (porte.includes('MEDIO') || porte.includes('MÉDIO')) return 'Média (50-249 funcionários)';
-        if (porte.includes('GRANDE')) return 'Grande (250+ funcionários)';
-        return 'Micro (até 9 funcionários)'; // Default
-      };
-
-      // Mapear faturamento baseado no capital social
-      const mapFaturamento = (capitalSocial: string) => {
-        const capital = parseFloat(capitalSocial.replace(/[^\d,]/g, '').replace(',', '.'));
-        if (capital <= 360000) return 'Até R$ 360 mil';
-        if (capital <= 4800000) return 'R$ 360 mil - R$ 4,8 milhões';
-        if (capital <= 300000000) return 'R$ 4,8 milhões - R$ 300 milhões';
-        return 'Acima de R$ 300 milhões';
-      };
-
-      // Determinar segmento baseado na atividade principal
-      const determineSegmento = (atividadePrincipal: any[]) => {
-        if (!atividadePrincipal || atividadePrincipal.length === 0) return 'Outros';
-        
-        const atividade = atividadePrincipal[0].text.toLowerCase();
-        
-        if (atividade.includes('tecnologia') || atividade.includes('software') || 
-            atividade.includes('dados') || atividade.includes('internet') ||
-            atividade.includes('hospedagem') || atividade.includes('aplicação')) {
-          return 'Tecnologia';
-        }
-        if (atividade.includes('saúde') || atividade.includes('médic') || atividade.includes('hospital')) {
-          return 'Saúde';
-        }
-        if (atividade.includes('educação') || atividade.includes('ensino') || atividade.includes('escola')) {
-          return 'Educação';
-        }
-        if (atividade.includes('financ') || atividade.includes('banco') || atividade.includes('crédito')) {
-          return 'Financeiro';
-        }
-        if (atividade.includes('varejo') || atividade.includes('comércio') || atividade.includes('venda')) {
-          return 'Varejo';
-        }
-        if (atividade.includes('indústria') || atividade.includes('fabricação') || atividade.includes('manufatura')) {
-          return 'Indústria';
-        }
-        if (atividade.includes('agro') || atividade.includes('rural') || atividade.includes('pecuária')) {
-          return 'Agronegócio';
-        }
-        if (atividade.includes('serviço') || atividade.includes('consultoria') || atividade.includes('assessoria')) {
-          return 'Serviços';
-        }
-        
-        return 'Outros';
-      };
-
-      // Determinar região baseado no UF
-      const determineRegiao = (uf: string) => {
-        const norte = ['AC', 'AP', 'AM', 'PA', 'RO', 'RR', 'TO'];
-        const nordeste = ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE'];
-        const centroOeste = ['GO', 'MT', 'MS', 'DF'];
-        const sudeste = ['ES', 'MG', 'RJ', 'SP'];
-        const sul = ['PR', 'RS', 'SC'];
-        
-        if (norte.includes(uf)) return 'Norte';
-        if (nordeste.includes(uf)) return 'Nordeste';
-        if (centroOeste.includes(uf)) return 'Centro-Oeste';
-        if (sudeste.includes(uf)) return 'Sudeste';
-        if (sul.includes(uf)) return 'Sul';
-        
-        return 'Sudeste'; // Default
-      };
+      const data = await fetchCNPJData(cnpj);
 
       // Atualizar dados da empresa
       setCompanyData(prev => ({
@@ -285,7 +191,7 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
 
     } catch (error) {
       console.error('Error fetching CNPJ data:', error);
-      setCnpjError('Erro ao consultar CNPJ. Tente novamente.');
+      setCnpjError(error instanceof Error ? error.message : 'Erro ao consultar CNPJ. Tente novamente.');
     } finally {
       setIsLoadingCNPJ(false);
     }
@@ -299,8 +205,12 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
     // Auto-buscar quando CNPJ estiver completo
     const cleanCNPJ = value.replace(/\D/g, '');
     if (cleanCNPJ.length === 14) {
-      fetchCNPJData(formattedCNPJ);
+      fetchCNPJDataWrapper(formattedCNPJ);
     }
+  };
+
+  const fetchCNPJDataWrapper = async (cnpj: string) => {
+    await fetchCNPJData(cnpj);
   };
 
   const addContact = () => {
