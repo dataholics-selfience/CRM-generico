@@ -78,9 +78,7 @@ export interface ClientType {
 export interface BusinessType {
   id: string;
   nome: string; // Nome do negócio
-  valor: number; // Valor total do negócio (setup + mensal)
-  setupValue: number; // Valor do setup
-  monthlyValue: number; // Valor mensal recorrente
+  valor: number; // Valor do negócio
   companyId: string; // ID da empresa
   contactIds: string[]; // IDs dos contatos
   serviceId: string;
@@ -226,9 +224,6 @@ export interface DashboardMetrics {
   conversionRate: number;
   averageTicket: number;
   pipelineValue: number;
-  monthlyValue: number; // Valor mensal dos negócios fechados neste mês
-  totalValue: number; // Valor total de todos os negócios fechados
-  mrr: number; // Monthly Recurring Revenue
   clientsByStage: Record<string, number>;
   salesStatus: {
     won: number;
