@@ -26,6 +26,18 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
       if (userData.role === 'admin') {
         // Admin sees all services
         setUserServices(services);
+        
+        // Admin can see all users for assignment
+        const usersQuery = query(collection(db, 'users'));
+        const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
+          const users = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as UserType[];
+          setAllUsers(users.filter(user => user.role === 'vendedor' || user.role === 'admin'));
+        });
+        
+        return () => unsubscribe();
       } else {
         // Vendedor sees only assigned services
         try {
@@ -50,29 +62,6 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
     };
 
     filterServices();
-  });
-
-  // Fetch all users for admin to select responsible salesperson
-  useState(() => {
-    const fetchUsers = async () => {
-      if (!userData || userData.role !== 'admin') return;
-      
-      try {
-        const usersQuery = query(collection(db, 'users'));
-        const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
-          const usersData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as UserType[];
-          setAllUsers(usersData.filter(user => user.role === 'vendedor' || user.role === 'admin'));
-        });
-        return () => unsubscribe();
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
-    };
-
-    fetchUsers();
   });
 
   // Company data
@@ -103,7 +92,7 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
     planId: '',
     stage: stages.length > 0 ? stages[0].id : '',
     description: '',
-    assignedTo: auth.currentUser?.uid || ''
+    assignedTo: userData?.uid || ''
   });
 
   const handleCompanyChange = (field: string, value: string) => {
@@ -171,7 +160,7 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
         ...businessData,
         companyId: companyRef.id,
         contactIds,
-        assignedTo: businessData.assignedTo,
+        assignedTo: businessData.assignedTo || auth.currentUser.uid,
         createdBy: auth.currentUser.uid,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -483,7 +472,7 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Setup inicial (R$) *
+                    Setup Inicial (R$) *
                   </label>
                   <input
                     type="number"
@@ -536,6 +525,27 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
                   </select>
                 </div>
 
+                {userData?.role === 'admin' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Vendedor Responsável *
+                    </label>
+                    <select
+                      value={businessData.assignedTo}
+                      onChange={(e) => handleBusinessChange('assignedTo', e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Selecione o vendedor</option>
+                      {allUsers.map((user) => (
+                        <option key={user.uid} value={user.uid}>
+                          {user.name} ({user.role === 'admin' ? 'Admin' : 'Vendedor'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Estágio Inicial *
@@ -552,34 +562,6 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
                       </option>
                     ))}
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Vendedor Responsável *
-                  </label>
-                  {userData?.role === 'admin' ? (
-                    <select
-                      value={businessData.assignedTo}
-                      onChange={(e) => handleBusinessChange('assignedTo', e.target.value)}
-                      required
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Selecione o vendedor</option>
-                      {allUsers.map((user) => (
-                        <option key={user.uid} value={user.uid}>
-                          {user.name} ({user.role === 'admin' ? 'Administrador' : 'Vendedor'})
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      value={userData?.name || ''}
-                      disabled
-                      className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md text-gray-300 cursor-not-allowed"
-                    />
-                  )}
                 </div>
               </div>
 

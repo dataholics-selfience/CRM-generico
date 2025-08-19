@@ -78,7 +78,6 @@ export interface ClientType {
 export interface BusinessType {
   id: string;
   nome: string; // Nome do negócio
-  valor?: number; // Valor do negócio (campo antigo para compatibilidade)
   setupInicial: number; // Setup inicial do negócio
   companyId: string; // ID da empresa
   contactIds: string[]; // IDs dos contatos

@@ -120,7 +120,7 @@ const Dashboard = () => {
             return true;
           })
           .reduce((sum, business) => {
-            return sum + business.valor;
+            return sum + (business.setupInicial || 0);
           }, 0);
 
         // Sales status breakdown
