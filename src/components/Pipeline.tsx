@@ -491,7 +491,7 @@ const Pipeline = () => {
         </div>
 
         <div className="flex-1 overflow-x-auto p-6">
-          <div className="grid gap-4 h-full" style={{ gridTemplateColumns: `repeat(${activeStages.length}, 1fr)` }}>
+          <div className="grid gap-4 h-full grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" style={{ gridTemplateColumns: activeStages.length <= 4 ? `repeat(${activeStages.length}, 1fr)` : undefined }}>
             {activeStages.map((stage) => {
               const stageBusinesses = businesses.filter(business => business.stage === stage.id);
               

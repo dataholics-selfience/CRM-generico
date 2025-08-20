@@ -643,11 +643,10 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
                   <select
                     value={businessData.planId}
                     onChange={(e) => handleBusinessChange('planId', e.target.value)}
-                    required
                     disabled={!selectedService}
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   >
-                    <option value="">Selecione o plano</option>
+                    <option value="">Nenhum (apenas setup)</option>
                     {selectedService?.plans.map((plan) => (
                       <option key={plan.id} value={plan.id}>
                         {plan.name} - R$ {plan.price.toLocaleString()} ({plan.duration})
