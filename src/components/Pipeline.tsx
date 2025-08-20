@@ -29,21 +29,6 @@ const BusinessCard = ({
   const [isRemoving, setIsRemoving] = useState(false);
   const service = services.find(s => s.id === business.serviceId);
   const plan = service?.plans.find(p => p.id === business.planId);
-  
-  // Determinar o valor mensal a ser exibido
-  const getMonthlyValue = () => {
-    if (business.planId === 'manual' && business.manualMonthlyValue) {
-      return business.manualMonthlyValue;
-    }
-    return plan?.price || 0;
-  };
-  
-  const getPlanName = () => {
-    if (business.planId === 'manual') {
-      return 'Plano Manual';
-    }
-    return plan?.name || 'Sem plano';
-  };
 
   const handleRemove = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -98,9 +83,9 @@ const BusinessCard = ({
       {service && (
         <div className="bg-gray-800 rounded p-2">
           <div className="text-blue-400 font-medium text-xs">{service.name}</div>
-          {(plan || business.planId === 'manual') && (
+          {plan && (
             <div className="text-gray-400 text-xs">
-              {getPlanName()} - R$ {getMonthlyValue().toLocaleString()}/mês
+              {plan.name} - R$ {plan.price.toLocaleString()}
             </div>
           )}
         </div>

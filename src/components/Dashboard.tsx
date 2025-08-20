@@ -124,11 +124,9 @@ const Dashboard = () => {
           const service = services.find(s => s.id === business.serviceId);
           const plan = service?.plans.find(p => p.id === business.planId);
           
-          if (plan || business.planId === 'manual') {
+          if (plan) {
             const setupValue = business.valor;
-            const monthlyValue = business.planId === 'manual' && business.manualMonthlyValue 
-              ? business.manualMonthlyValue 
-              : plan?.price || 0;
+            const monthlyValue = plan.price;
             
             // Pipeline value: setup + 12 monthly payments for ALL businesses
             pipelineValue += setupValue + (monthlyValue * 12);
@@ -147,11 +145,9 @@ const Dashboard = () => {
           const service = services.find(s => s.id === business.serviceId);
           const plan = service?.plans.find(p => p.id === business.planId);
           
-          if (plan || business.planId === 'manual') {
+          if (plan) {
             const setupValue = business.valor;
-            const monthlyValue = business.planId === 'manual' && business.manualMonthlyValue 
-              ? business.manualMonthlyValue 
-              : plan?.price || 0;
+            const monthlyValue = plan.price;
             
             // Check if closed this month
             const closedAt = new Date(business.updatedAt);
