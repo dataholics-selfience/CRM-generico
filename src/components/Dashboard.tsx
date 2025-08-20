@@ -122,22 +122,11 @@ const Dashboard = () => {
         // Calculate pipeline value for ALL businesses (including closed ones)
         businesses.forEach(business => {
           const service = services.find(s => s.id === business.serviceId);
-          const plan = business.planId !== 'custom' ? service?.plans.find(p => p.id === business.planId) : null;
+          const plan = service?.plans.find(p => p.id === business.planId);
           
-          let monthlyValue = 0;
-          if (business.planId === 'custom') {
-            monthlyValue = business.customMonthlyValue || 0;
-          } else if (plan) {
-            monthlyValue = plan.price;
-          }
-          
-          // Aplicar desconto se houver
-          if (business.discountPercentage && business.discountPercentage > 0) {
-            monthlyValue = monthlyValue * (1 - business.discountPercentage / 100);
-          }
-          
-          if (monthlyValue > 0 || business.valor > 0) {
+          if (plan) {
             const setupValue = business.valor;
+            const monthlyValue = plan.price;
             
             // Pipeline value: setup + 12 monthly payments for ALL businesses
             pipelineValue += setupValue + (monthlyValue * 12);
@@ -154,22 +143,11 @@ const Dashboard = () => {
 
         wonBusinesses.forEach(business => {
           const service = services.find(s => s.id === business.serviceId);
-          const plan = business.planId !== 'custom' ? service?.plans.find(p => p.id === business.planId) : null;
+          const plan = service?.plans.find(p => p.id === business.planId);
           
-          let monthlyValue = 0;
-          if (business.planId === 'custom') {
-            monthlyValue = business.customMonthlyValue || 0;
-          } else if (plan) {
-            monthlyValue = plan.price;
-          }
-          
-          // Aplicar desconto se houver
-          if (business.discountPercentage && business.discountPercentage > 0) {
-            monthlyValue = monthlyValue * (1 - business.discountPercentage / 100);
-          }
-          
-          if (monthlyValue > 0 || business.valor > 0) {
+          if (plan) {
             const setupValue = business.valor;
+            const monthlyValue = plan.price;
             
             // Check if closed this month
             const closedAt = new Date(business.updatedAt);

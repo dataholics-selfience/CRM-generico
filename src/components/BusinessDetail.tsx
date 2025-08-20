@@ -293,26 +293,7 @@ const BusinessDetail = () => {
   }
 
   const service = services.find(s => s.id === business.serviceId);
-  const plan = business.planId !== 'custom' ? service?.plans.find(p => p.id === business.planId) : null;
-  
-  // Calcular valor com desconto
-  const calculateFinalValue = () => {
-    let monthlyValue = 0;
-    
-    if (business.planId === 'custom') {
-      monthlyValue = business.customMonthlyValue || 0;
-    } else if (plan) {
-      monthlyValue = plan.price;
-    }
-    
-    if (business.discountPercentage && business.discountPercentage > 0) {
-      monthlyValue = monthlyValue * (1 - business.discountPercentage / 100);
-    }
-    
-    return monthlyValue;
-  };
-  
-  const finalMonthlyValue = calculateFinalValue();
+  const plan = service?.plans.find(p => p.id === business.planId);
   const currentStage = stages.find(s => s.id === business.stage);
   const currentStageIndex = stages.findIndex(s => s.id === business.stage);
 
@@ -489,16 +470,14 @@ const BusinessDetail = () => {
                       <div className="bg-gray-700 rounded p-3">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-medium text-white">{plan.name}</span>
-                  {(plan || business.planId === 'custom') && (
+                          <div className="flex items-center gap-1">
                             <DollarSign size={14} className="text-green-400" />
                             <span className="text-green-400 font-bold">
-                        <span className="font-medium text-white">
-                          {business.planId === 'custom' ? 'Valor Personalizado' : plan?.name}
-                        </span>
+                              R$ {plan.price.toLocaleString()}
                             </span>
                           </div>
                         </div>
-                            R$ {finalMonthlyValue.toLocaleString()}
+                        <div className="text-xs text-gray-400">
                           {plan.features.join(' • ')}
                         </div>
                       </div>
@@ -789,31 +768,9 @@ const BusinessDetail = () => {
                             className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         ) : (
-                      {business.discountPercentage > 0 && (
-                        <div className="text-xs text-green-400 mb-2">
-                          Desconto aplicado: {business.discountPercentage}%
-                          {business.planId !== 'custom' && plan && (
-                            <span className="text-gray-400 ml-2">
-                              (Valor original: R$ {plan.price.toLocaleString()})
-                            </span>
-                          )}
-                          {business.planId === 'custom' && (
-                            <span className="text-gray-400 ml-2">
-                              (Valor original: R$ {(business.customMonthlyValue || 0).toLocaleString()})
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {plan && (
-                        <div className="text-xs text-gray-400">
-                          {plan.features.join(' • ')}
-                        </div>
-                      )}
-                      {business.planId === 'custom' && (
-                        <div className="text-xs text-gray-400">
-                          Plano personalizado com valor mensal definido
-                        </div>
-                      )}
+                          <p className="text-white">{contact.cargoAlvo}</p>
+                        )}
+                      </div>
                     </div>
 
                     {/* Botões para remover contatos durante edição */}

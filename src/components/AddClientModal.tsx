@@ -112,8 +112,6 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
     valor: 0,
     serviceId: '',
     planId: '',
-    customMonthlyValue: 0,
-    discountPercentage: 0,
     stage: stages.length > 0 ? stages[0].id : '',
     description: ''
   });
@@ -654,48 +652,8 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
                         {plan.name} - R$ {plan.price.toLocaleString()} ({plan.duration})
                       </option>
                     ))}
-                    <option value="custom">Definir valor personalizado</option>
                   </select>
                 </div>
-
-                {businessData.planId === 'custom' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Valor Mensal Personalizado (R$) *
-                    </label>
-                    <input
-                      type="number"
-                      value={businessData.customMonthlyValue}
-                      onChange={(e) => handleBusinessChange('customMonthlyValue', Number(e.target.value))}
-                      required
-                      min="0"
-                      step="0.01"
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="0.00"
-                    />
-                  </div>
-                )}
-
-                {userData?.role === 'admin' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Conceder Desconto (%)
-                    </label>
-                    <input
-                      type="number"
-                      value={businessData.discountPercentage}
-                      onChange={(e) => handleBusinessChange('discountPercentage', Number(e.target.value))}
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="0.00"
-                    />
-                    <p className="text-gray-400 text-xs mt-1">
-                      Desconto aplicado sobre o valor do plano ou valor personalizado
-                    </p>
-                  </div>
-                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
