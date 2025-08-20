@@ -28,7 +28,26 @@ const BusinessCard = ({
 }) => {
   const [isRemoving, setIsRemoving] = useState(false);
   const service = services.find(s => s.id === business.serviceId);
-  const plan = service?.plans.find(p => p.id === business.planId);
+  const plan = business.planId !== 'custom' ? service?.plans.find(p => p.id === business.planId) : null;
+  
+  // Calcular valor com desconto
+  const calculateFinalValue = () => {
+    let monthlyValue = 0;
+    
+    if (business.planId === 'custom') {
+      monthlyValue = business.customMonthlyValue || 0;
+    } else if (plan) {
+      monthlyValue = plan.price;
+    }
+    
+    if (business.discountPercentage && business.discountPercentage > 0) {
+      monthlyValue = monthlyValue * (1 - business.discountPercentage / 100);
+    }
+    
+    return monthlyValue;
+  };
+  
+  const finalMonthlyValue = calculateFinalValue();
 
   const handleRemove = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -83,9 +102,27 @@ const BusinessCard = ({
       {service && (
         <div className="bg-gray-800 rounded p-2">
           <div className="text-blue-400 font-medium text-xs">{service.name}</div>
-          {plan && (
+          {(plan || business.planId === 'custom') && (
             <div className="text-gray-400 text-xs">
-              {plan.name} - R$ {plan.price.toLocaleString()}
+              {business.planId === 'custom' ? (
+                <>
+                  Valor Personalizado - R$ {finalMonthlyValue.toLocaleString()}
+                  {business.discountPercentage > 0 && (
+                    <span className="text-green-400 ml-1">
+                      ({business.discountPercentage}% desc.)
+                    </span>
+                  )}
+                </>
+              ) : plan ? (
+                <>
+                  {plan.name} - R$ {finalMonthlyValue.toLocaleString()}
+                  {business.discountPercentage > 0 && (
+                    <span className="text-green-400 ml-1">
+                      ({business.discountPercentage}% desc.)
+                    </span>
+                  )}
+                </>
+              ) : null}
             </div>
           )}
         </div>

@@ -83,6 +83,8 @@ export interface BusinessType {
   contactIds: string[]; // IDs dos contatos
   serviceId: string;
   planId: string;
+  customMonthlyValue?: number; // Valor mensal personalizado quando planId === 'custom'
+  discountPercentage?: number; // Percentual de desconto aplicado
   stage: string; // ID do estágio
   assignedTo: string; // userId do vendedor responsável
   createdAt: string;
