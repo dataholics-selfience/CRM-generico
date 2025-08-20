@@ -112,6 +112,7 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
     valor: 0,
     serviceId: '',
     planId: '',
+    manualMonthlyValue: 0,
     stage: stages.length > 0 ? stages[0].id : '',
     description: ''
   });
@@ -140,7 +141,7 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
       // Atualizar dados da empresa
       setCompanyData(prev => ({
         ...prev,
-        nome: data.nome || prev.nome,
+        nome: data.fantasia || data.nome || prev.nome, // Priorizar nome fantasia
         fantasia: data.fantasia || '',
         abertura: data.abertura || '',
         situacao: data.situacao || '',
@@ -640,19 +641,40 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Plano *
                   </label>
-                  <select
-                    value={businessData.planId}
-                    onChange={(e) => handleBusinessChange('planId', e.target.value)}
-                    disabled={!selectedService}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                  >
-                    <option value="">Nenhum (apenas setup)</option>
-                    {selectedService?.plans.map((plan) => (
-                      <option key={plan.id} value={plan.id}>
-                        {plan.name} - R$ {plan.price.toLocaleString()} ({plan.duration})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="space-y-2">
+                    <select
+                      value={businessData.planId}
+                      onChange={(e) => handleBusinessChange('planId', e.target.value)}
+                      disabled={!selectedService}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    >
+                      <option value="">Nenhum (apenas setup)</option>
+                      <option value="manual">Manual (valor personalizado)</option>
+                      {selectedService?.plans.map((plan) => (
+                        <option key={plan.id} value={plan.id}>
+                          {plan.name} - R$ {plan.price.toLocaleString()} ({plan.duration})
+                        </option>
+                      ))}
+                    </select>
+                    
+                    {businessData.planId === 'manual' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Valor Mensal (R$) *
+                        </label>
+                        <input
+                          type="number"
+                          value={businessData.manualMonthlyValue || 0}
+                          onChange={(e) => handleBusinessChange('manualMonthlyValue', Number(e.target.value))}
+                          required
+                          min="0"
+                          step="0.01"
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>

@@ -83,6 +83,7 @@ export interface BusinessType {
   contactIds: string[]; // IDs dos contatos
   serviceId: string;
   planId: string;
+  manualMonthlyValue?: number; // Valor mensal manual quando planId === 'manual'
   stage: string; // ID do estágio
   assignedTo: string; // userId do vendedor responsável
   createdAt: string;
