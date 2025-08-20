@@ -112,6 +112,8 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
     valor: 0,
     serviceId: '',
     planId: '',
+    customPlanPrice: 0,
+    discountPercentage: 0,
     stage: stages.length > 0 ? stages[0].id : '',
     description: ''
   });
@@ -276,6 +278,25 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
   };
 
   const selectedService = userServices.find(s => s.id === businessData.serviceId);
+  const selectedPlan = selectedService?.plans.find(p => p.id === businessData.planId);
+  
+  // Calculate final price with discount
+  const calculateFinalPrice = () => {
+    let basePrice = 0;
+    
+    if (businessData.planId === 'custom') {
+      basePrice = businessData.customPlanPrice;
+    } else if (selectedPlan) {
+      basePrice = selectedPlan.price;
+    }
+    
+    if (businessData.discountPercentage > 0) {
+      const discount = (basePrice * businessData.discountPercentage) / 100;
+      return basePrice - discount;
+    }
+    
+    return basePrice;
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -652,8 +673,58 @@ const AddClientModal = ({ onClose, services, userData, stages }: AddClientModalP
                         {plan.name} - R$ {plan.price.toLocaleString()} ({plan.duration})
                       </option>
                     ))}
+                    <option value="custom">Personalizado</option>
                   </select>
                 </div>
+
+                {businessData.planId === 'custom' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Valor Mensal Personalizado (R$) *
+                    </label>
+                    <input
+                      type="number"
+                      value={businessData.customPlanPrice}
+                      onChange={(e) => handleBusinessChange('customPlanPrice', Number(e.target.value))}
+                      required
+                      min="0"
+                      step="0.01"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="0.00"
+                    />
+                  </div>
+                )}
+
+                {userData?.role === 'admin' && (businessData.planId && businessData.planId !== '') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Conceder Desconto (%)
+                    </label>
+                    <input
+                      type="number"
+                      value={businessData.discountPercentage}
+                      onChange={(e) => handleBusinessChange('discountPercentage', Number(e.target.value))}
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="0"
+                    />
+                    {businessData.discountPercentage > 0 && (
+                      <div className="mt-2 p-2 bg-green-900/20 border border-green-800 rounded">
+                        <p className="text-green-400 text-sm">
+                          Preço original: R$ {businessData.planId === 'custom' ? businessData.customPlanPrice.toLocaleString() : (selectedPlan?.price.toLocaleString() || '0')}
+                        </p>
+                        <p className="text-green-400 text-sm">
+                          Desconto: R$ {((businessData.planId === 'custom' ? businessData.customPlanPrice : (selectedPlan?.price || 0)) * businessData.discountPercentage / 100).toLocaleString()}
+                        </p>
+                        <p className="text-green-400 text-sm font-bold">
+                          Preço final: R$ {calculateFinalPrice().toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
