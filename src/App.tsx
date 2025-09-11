@@ -20,6 +20,7 @@ import ServiceManagement from './components/ServiceManagement';
 import Dashboard from './components/Dashboard';
 import StageManagement from './components/StageManagement';
 import { UserType } from './types';
+import UserManagementPage from './components/UserManagement/UserManagementPage';
 
 function App() {
   const [user, setUser] = useState<any>(null);
@@ -79,6 +80,7 @@ function App() {
           <Route path="/services" element={userData?.emailVerified && userData?.role === 'admin' ? <ServiceManagement /> : <Navigate to="/" replace />} />
           <Route path="/stages" element={userData?.emailVerified && userData?.role === 'admin' ? <StageManagement /> : <Navigate to="/" replace />} />
           <Route path="/dashboard" element={userData?.emailVerified ? <Dashboard /> : <Navigate to="/verify-email" replace />} />
+          <Route path="/gerenciar-usuarios" element={userData?.emailVerified && userData?.role === 'admin' ? <UserManagementPage /> : <Navigate to="/" replace />} />
           <Route path="/account-deleted" element={<AccountDeleted />} />
           <Route path="/" element={
             user ? (

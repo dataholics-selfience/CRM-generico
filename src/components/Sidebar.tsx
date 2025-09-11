@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, BarChart3, Sun, Moon, Settings, Users, Building, Edit } from 'lucide-react';
+import { X, BarChart3, Sun, Moon, Settings, Users, Building, Edit, UserCog } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
@@ -92,11 +92,11 @@ const Sidebar = ({ isOpen, toggleSidebar, userData }: SidebarProps) => {
                 </Link>
 
                 <Link 
-                  to="/cadastro-administrador"
+                  to="/gerenciar-usuarios"
                   className="w-full flex items-center gap-2 text-base font-medium bg-gradient-to-r from-indigo-600 to-indigo-800 hover:from-indigo-700 hover:to-indigo-900 text-white p-3 rounded-lg transition-all shadow-lg hover:shadow-xl"
                 >
-                  <Settings size={18} />
-                  <span>Cadastrar Admin</span>
+                  <UserCog size={18} />
+                  <span>Gerenciar Usuários</span>
                 </Link>
 
                 <div className={`px-3 py-2 text-xs font-semibold uppercase tracking-wide ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
