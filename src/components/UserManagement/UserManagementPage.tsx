@@ -78,8 +78,8 @@ const UserManagementPage = () => {
   };
 
   const filteredUsers = allUsers.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (user.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (user.email || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === 'all' || user.role === filterRole;
     return matchesSearch && matchesRole;
   });
@@ -135,7 +135,7 @@ const UserManagementPage = () => {
           
           <button
             onClick={() => navigate('/cadastro-administrador')}
-            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
           >
             <Settings size={18} />
             Cadastrar Admin
@@ -186,7 +186,7 @@ const UserManagementPage = () => {
             
             <div className="bg-gray-800 rounded-lg p-6">
               <div className="flex items-center gap-3">
-                <Shield className="text-purple-400" size={24} />
+                <Shield className="text-cyan-400" size={24} />
                 <div>
                   <h3 className="text-lg font-bold text-white">
                     {allUsers.filter(u => u.role === 'admin').length}
@@ -278,8 +278,8 @@ const UserCard = ({
   onDeleteUser: (user: UserType) => void;
 }) => {
   const getRoleColor = (role: string) => {
-    return role === 'admin' 
-      ? 'bg-purple-900/30 text-purple-400 border border-purple-800'
+    return role === 'admin'
+      ? 'bg-cyan-900/30 text-cyan-400 border border-cyan-800'
       : 'bg-blue-900/30 text-blue-400 border border-blue-800';
   };
 
@@ -298,12 +298,12 @@ const UserCard = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4 flex-1">
           <div className="w-12 h-12 rounded-full bg-blue-900 flex items-center justify-center text-white font-semibold">
-            {user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+            {(user.name || user.email).split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
           </div>
           
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-white font-medium">{user.name}</h3>
+              <h3 className="text-white font-medium">{user.name || 'Sem nome'}</h3>
               <span className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 ${getRoleColor(user.role)}`}>
                 <RoleIcon size={12} />
                 {getRoleLabel(user.role)}
@@ -449,7 +449,7 @@ const ChangePasswordModal = ({
       } else {
         // Admin alterando senha de outro usuário
         // Mostrar a nova senha para o admin informar ao usuário
-        alert(`Nova senha para ${user.name}: ${formData.newPassword}\n\nPor favor, informe ao usuário esta nova senha.`);
+        alert(`Nova senha para ${user.name || user.email}: ${formData.newPassword}\n\nPor favor, informe ao usuário esta nova senha.`);
       }
 
       onClose();
@@ -472,7 +472,7 @@ const ChangePasswordModal = ({
       <div className="bg-gray-800 rounded-lg max-w-md w-full">
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
           <h2 className="text-xl font-bold text-white">
-            Alterar Senha - {user.name}
+            Alterar Senha - {user.name || user.email}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
             <X size={24} />
@@ -560,7 +560,7 @@ const ChangePasswordModal = ({
           <button
             type="button"
             onClick={generatePassword}
-            className="w-full py-2 px-4 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors"
+            className="w-full py-2 px-4 bg-cyan-600 hover:bg-cyan-700 rounded-md text-white font-medium transition-colors"
           >
             Gerar Senha Aleatória
           </button>
@@ -699,7 +699,7 @@ const DeleteUserModal = ({
               <h3 className="text-red-400 font-medium">Atenção!</h3>
             </div>
             <p className="text-gray-300 text-sm">
-              Você está prestes a excluir o usuário <strong>{user.name}</strong> ({user.email}).
+              Você está prestes a excluir o usuário <strong>{user.name || user.email}</strong> ({user.email}).
               Esta ação não pode ser desfeita.
             </p>
           </div>
@@ -724,7 +724,7 @@ const DeleteUserModal = ({
                 <option value="">Selecione um usuário</option>
                 {allUsers.map((availableUser) => (
                   <option key={availableUser.uid} value={availableUser.uid}>
-                    {availableUser.name} ({availableUser.role === 'admin' ? 'Admin' : 'Vendedor'})
+                    {availableUser.name || availableUser.email} ({availableUser.role === 'admin' ? 'Admin' : 'Vendedor'})
                   </option>
                 ))}
               </select>

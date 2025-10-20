@@ -91,9 +91,9 @@ const Sidebar = ({ isOpen, toggleSidebar, userData }: SidebarProps) => {
                   <span>Gerenciar Etapas</span>
                 </Link>
 
-                <Link 
+                <Link
                   to="/gerenciar-usuarios"
-                  className="w-full flex items-center gap-2 text-base font-medium bg-gradient-to-r from-indigo-600 to-indigo-800 hover:from-indigo-700 hover:to-indigo-900 text-white p-3 rounded-lg transition-all shadow-lg hover:shadow-xl"
+                  className="w-full flex items-center gap-2 text-base font-medium bg-gradient-to-r from-teal-600 to-teal-800 hover:from-teal-700 hover:to-teal-900 text-white p-3 rounded-lg transition-all shadow-lg hover:shadow-xl"
                 >
                   <UserCog size={18} />
                   <span>Gerenciar Usuários</span>
