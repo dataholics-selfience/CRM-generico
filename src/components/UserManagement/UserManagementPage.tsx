@@ -4,6 +4,7 @@ import { ArrowLeft, Trash2, Save, X } from 'lucide-react';
 import {
   collection, getDocs, doc, deleteDoc, updateDoc, query, where
 } from 'firebase/firestore';
+import { getAuth, updatePassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../../firebase';
 import { UserType } from '../../types';
 
@@ -97,9 +98,46 @@ const UserManagementPage = () => {
 
       await updateDoc(doc(db, 'users', editingUser.uid), updateData);
 
+      if (editForm.newPassword && editForm.newPassword.trim() !== '') {
+        if (editForm.newPassword.length < 6) {
+          alert('A senha deve ter pelo menos 6 caracteres');
+          return;
+        }
+
+        const currentUserEmail = auth.currentUser?.email;
+        const targetUserEmail = editingUser.email;
+
+        if (currentUserEmail && currentUserEmail !== targetUserEmail) {
+          alert(
+            `Atenção: Para que a senha seja alterada, é necessário que ${editingUser.name} faça login novamente.\n\n` +
+            `Nova senha: ${editForm.newPassword}\n\n` +
+            `Por favor, informe ao usuário.`
+          );
+        } else if (currentUserEmail === targetUserEmail) {
+          try {
+            const user = auth.currentUser;
+            if (user) {
+              await updatePassword(user, editForm.newPassword);
+              alert('Dados e senha atualizados com sucesso');
+            }
+          } catch (error: any) {
+            console.error('Error updating password:', error);
+            if (error.code === 'auth/requires-recent-login') {
+              alert('Erro: É necessário fazer login novamente para alterar a senha.');
+            } else {
+              alert('Erro ao atualizar senha: ' + error.message);
+            }
+            return;
+          }
+        }
+      }
+
       setUsers(users.map(u => u.uid === editingUser.uid ? { ...u, ...updateData } : u));
       setEditingUser(null);
-      alert('Usuário atualizado com sucesso');
+
+      if (!editForm.newPassword || editForm.newPassword.trim() === '') {
+        alert('Usuário atualizado com sucesso');
+      }
     } catch (error) {
       console.error('Error updating user:', error);
       alert('Erro ao atualizar usuário');
